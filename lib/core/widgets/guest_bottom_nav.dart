@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
 import '../../features/home/pages/home_page.dart';
+import '../../features/history/pages/history_page.dart';
 import '../../features/profile/pages/profile_page.dart';
 
 class GuestBottomNav extends StatelessWidget {
@@ -46,7 +47,8 @@ class GuestBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(context, Icons.home_rounded, 'Home', 0),
-          _buildNavItem(context, Icons.person_rounded, 'Profile', 1),
+          _buildNavItem(context, Icons.access_time_rounded, 'History', 1),
+          _buildNavItem(context, Icons.person_rounded, 'Profile', 2),
         ],
       ),
     );
@@ -62,6 +64,8 @@ class GuestBottomNav extends StatelessWidget {
           if (index == 0) {
             _navigateWithSlide(context, const HomePage(), AppRoutes.home, slideFromRight);
           } else if (index == 1) {
+            _navigateWithSlide(context, const HistoryPage(), AppRoutes.history, slideFromRight);
+          } else if (index == 2) {
             _navigateWithSlide(context, const ProfilePage(), AppRoutes.profile, slideFromRight);
           }
         }

@@ -26,8 +26,8 @@ class HomeHeader extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -41,25 +41,49 @@ class HomeHeader extends StatelessWidget {
                   ),
                   child: Center(
                     child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 32,
-                      height: 32,
+                      'assets/images/img_logo_app.png',
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.shield_outlined,
                         color: AppColors.primary,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'TBCare+',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                    letterSpacing: -0.5,
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Color(0xFF076453),
+                      letterSpacing: -0.5,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'TB',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const TextSpan(
+                        text: 'Care',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      WidgetSpan(
+                        child: Transform.translate(
+                          offset: const Offset(0, -6),
+                          child: const Text(
+                            '+',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF00BC99),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -95,8 +119,8 @@ class HomeHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
-                    image: const DecorationImage(
-                      image: NetworkImage('https://storage.googleapis.com/banani-avatars/avatar/male/18-25/European/4'),
+                    image: DecorationImage(
+                      image: NetworkImage(isGuest ? 'https://storage.googleapis.com/banani-avatars/avatar/male/18-25/European/4' : 'https://storage.googleapis.com/banani-avatars/avatar/female/18-25/Asian/4'),
                       fit: BoxFit.cover,
                     ),
                     boxShadow: [
@@ -109,9 +133,9 @@ class HomeHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Hello, Guest',
-                  style: TextStyle(
+                Text(
+                  isGuest ? 'Hello, Guest' : 'Hello, Aisha',
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: AppColors.mutedForeground,

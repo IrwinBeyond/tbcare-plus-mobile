@@ -73,7 +73,7 @@ class ProfilePage extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const GuestBottomNav(currentIndex: 1),
+      bottomNavigationBar: const GuestBottomNav(currentIndex: 2),
     );
   }
 
@@ -133,20 +133,6 @@ class ProfilePage extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Decorative blur circle
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.muted.withOpacity(0.4),
-                  ),
-                ),
-              ),
-
               // Content
               Column(
                 children: [

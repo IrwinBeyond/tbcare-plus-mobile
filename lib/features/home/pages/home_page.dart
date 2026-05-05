@@ -238,7 +238,7 @@ class _HomePageState extends State<HomePage> {
                 _symptomStates[key] = val;
               });
             },
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             activeTrackColor: AppColors.primary.withOpacity(0.2),
             inactiveThumbColor: Colors.white,
             inactiveTrackColor: Colors.grey.withOpacity(0.1),
@@ -294,14 +294,6 @@ class _HomePageState extends State<HomePage> {
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.foreground,
-          ),
-        ),
-        const Text(
-          'See All',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
           ),
         ),
       ],

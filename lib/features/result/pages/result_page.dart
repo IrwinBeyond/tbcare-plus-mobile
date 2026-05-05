@@ -278,15 +278,15 @@ class _ResultPageState extends State<ResultPage> {
                     onPressed: () => Navigator.pushNamed(context, AppRoutes.fullAssessment),
                   ),
                   const SizedBox(height: 12),
-                  _buildButton(
-                    'View Symptom Insights',
-                    Colors.white,
-                    mainColor,
-                    false,
-                    borderColor: mainColor.withOpacity(0.2),
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.symptomInfo),
-                  ),
-                  const SizedBox(height: 12),
+                  // _buildButton(
+                  //   'View Symptom Insights',
+                  //   Colors.white,
+                  //   mainColor,
+                  //   false,
+                  //   borderColor: mainColor.withOpacity(0.2),
+                  //   onPressed: () => Navigator.pushNamed(context, AppRoutes.symptomInfo),
+                  // ),
+                  // const SizedBox(height: 12),
                 ],
                 
                 _buildButton(

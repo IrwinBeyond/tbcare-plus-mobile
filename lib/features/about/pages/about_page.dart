@@ -20,6 +20,7 @@ class AboutPage extends StatelessWidget {
           // Main Content
           SafeArea(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header
                 _buildHeader(context),
@@ -392,13 +393,14 @@ class AboutPage extends StatelessWidget {
   // ─── FOOTER ───────────────────────────────────────────────
   Widget _buildFooter() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 96,
+          height: 96,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
             border: Border.all(color: Colors.white),
             boxShadow: [
               BoxShadow(
@@ -408,10 +410,18 @@ class AboutPage extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(
-            Icons.monitor_heart_outlined,
-            size: 24,
-            color: AppColors.primary.withOpacity(0.6),
+          child: Center(
+            child: Image.asset(
+              'assets/images/img_logo_app.png',
+              width: 56,
+              height: 56,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.shield_outlined,
+                color: AppColors.primary,
+                size: 48,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 12),

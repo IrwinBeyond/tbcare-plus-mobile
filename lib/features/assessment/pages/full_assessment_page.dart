@@ -466,7 +466,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   _generalSymptoms[key] = val;
                 });
               },
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withOpacity(0.3),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: AppColors.muted,

@@ -17,24 +17,30 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   late AnimationController _entranceController;
   late Animation<double> _entranceAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Drag Animation (Cover <-> Login)
     _dragController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _dragAnimation = CurvedAnimation(parent: _dragController, curve: Curves.easeOutQuart);
+    _dragAnimation = CurvedAnimation(
+      parent: _dragController,
+      curve: Curves.easeOutQuart,
+    );
 
     // Entrance Animation (Center -> Cover)
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
     );
-    _entranceAnimation = CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
+    _entranceAnimation = CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeOutCubic,
+    );
 
     // Start entrance animation after a longer delay
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -53,7 +59,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     if (!_entranceController.isCompleted) return; // Block drag during entrance
-    
+
     _dragController.value -= details.primaryDelta! / 400;
   }
 
@@ -92,16 +98,21 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
               // First lerp for entrance, second for drag
               final currentLogoTop = Color.lerp(
-                Color.fromARGB(lerpDouble(logoStartTop, logoCoverTop, tE)!.toInt(), 0, 0, 0),
+                Color.fromARGB(
+                  lerpDouble(logoStartTop, logoCoverTop, tE)!.toInt(),
+                  0,
+                  0,
+                  0,
+                ),
                 Color.fromARGB(logoLoginTop.toInt(), 0, 0, 0),
-                tD
+                tD,
               )!.alpha.toDouble();
-              
+
               // Simplest way to lerp double twice:
               final logoPos = lerpDouble(
                 lerpDouble(logoStartTop, logoCoverTop, tE),
                 logoLoginTop,
-                tD
+                tD,
               )!;
 
               final logoOpacity = (1.0 - tD * 2.0).clamp(0.0, 1.0);
@@ -115,7 +126,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               final sheetPos = lerpDouble(
                 lerpDouble(sheetStartTop, sheetCoverTop, tE),
                 sheetLoginTop,
-                tD
+                tD,
               )!;
 
               return Stack(
@@ -147,14 +158,19 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
                             child: _buildBackIcon(),
                           ),
                           const SizedBox(height: 24),
-                          const Text('Welcome Back', style: AppTextStyles.heading1),
-                          const Text('Login to your account', style: AppTextStyles.bodyMedium),
+                          const Text(
+                            'Welcome Back',
+                            style: AppTextStyles.heading1,
+                          ),
+                          const Text(
+                            'Login to your account',
+                            style: AppTextStyles.bodyMedium,
+                          ),
                         ],
                       ),
                     ),
                   ),
 
-                  // Draggable Bottom Sheet
                   Positioned(
                     top: sheetPos,
                     left: 0,
@@ -193,9 +209,9 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
           // Cover Content (Fades out)
           Opacity(
             opacity: (1.0 - t * 3.0).clamp(0.0, 1.0),
-            child: _buildCoverSheetItems(),
+            child: SingleChildScrollView(child: _buildCoverSheetItems()),
           ),
-          
+
           // Login Content (Fades in)
           Opacity(
             opacity: (t * 3.0 - 2.0).clamp(0.0, 1.0),
@@ -204,17 +220,17 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               child: _buildLoginSheetItems(),
             ),
           ),
-          
-          // Handlebar (Always visible)
+
+          // Handlebar (Always visible) - Styled like a clipboard clip
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
-              padding: const EdgeInsets.only(top: 16.0),
+              padding: const EdgeInsets.only(top: 14.0),
               child: Container(
-                width: 48,
-                height: 5,
+                width: 55,
+                height: 6,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(100),
                 ),
               ),
@@ -257,7 +273,11 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
           const SizedBox(height: 20),
           _buildLabel('Password'),
           const SizedBox(height: 8),
-          _buildTextField(hint: 'Enter your password', icon: Icons.lock_outline, isPassword: true),
+          _buildTextField(
+            hint: 'Enter your password',
+            icon: Icons.lock_outline,
+            isPassword: true,
+          ),
           const SizedBox(height: 30),
           _buildLoginButton(),
           const SizedBox(height: 20),
@@ -282,7 +302,11 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.white),
       ),
-      child: const Icon(Icons.arrow_back, color: AppColors.foreground, size: 20),
+      child: const Icon(
+        Icons.arrow_back,
+        color: AppColors.foreground,
+        size: 20,
+      ),
     );
   }
 
@@ -296,9 +320,14 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
             onPressed: () => _dragController.forward(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
-            child: const Text('Get Started', style: AppTextStyles.buttonPrimary),
+            child: const Text(
+              'Get Started',
+              style: AppTextStyles.buttonPrimary,
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -317,7 +346,9 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -339,7 +370,9 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           backgroundColor: AppColors.primary.withOpacity(0.08),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         child: Text(text, style: AppTextStyles.buttonSecondary),
       ),
@@ -351,12 +384,23 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(left: 4.0),
-        child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.foreground)),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppColors.foreground,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildTextField({required String hint, required IconData icon, bool isPassword = false}) {
+  Widget _buildTextField({
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -367,9 +411,16 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         obscureText: isPassword,
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: Icon(icon, color: AppColors.primary.withOpacity(0.7), size: 20),
+          prefixIcon: Icon(
+            icon,
+            color: AppColors.primary.withOpacity(0.7),
+            size: 20,
+          ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -378,10 +429,124 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
   Widget _buildLogoWidget() {
     return Stack(
       alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
-        Container(width: 180, height: 180, decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(44), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 30)])),
-        Container(width: 172, height: 172, decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(40), gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.white, AppColors.primary.withOpacity(0.05)]), border: Border.all(color: AppColors.white.withOpacity(0.5)))),
-        Container(width: 130, height: 130, child: Image.network('https://firebasestorage.googleapis.com/v0/b/banani-prod.appspot.com/o/reference-images%2Fd652bf46-ee82-48d9-a308-9120787dc0f9?alt=media&token=98c7af92-08e7-47ad-8144-e7074e4e4f33', errorBuilder: (c, e, s) => const Icon(Icons.health_and_safety, size: 80, color: AppColors.primary))),
+        // Green aura effect at the top
+        Positioned(
+          top: -25,
+          child: Container(
+            width: 150,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.22),
+                  AppColors.white.withOpacity(0),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Green aura effect at the bottom right - 'Smoke' effect
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(0.2, 0.2),
+                radius: 0.7,
+                colors: [
+                  AppColors.primary.withOpacity(0.35),
+                  AppColors.white.withOpacity(0.15),
+                  AppColors.white.withOpacity(0),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // Green aura effect at the bottom left
+        Positioned(
+          bottom: -20,
+          left: -20,
+          child: Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-0.4, -0.4),
+                radius: 0.8,
+                colors: [
+                  AppColors.primary.withOpacity(0.28),
+                  AppColors.white.withOpacity(0.16),
+                  AppColors.white.withOpacity(0.0),
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // Main Container
+        Container(
+          width: 210,
+          height: 210,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(52),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [
+                  AppColors.primary.withOpacity(0.22),
+                  AppColors.white.withOpacity(0.14),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(46),
+            ),
+            padding: const EdgeInsets.all(24), // Increased padding to shrink inner box
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/img_logo_app.png',
+                  width: 155, // Enlarge logo slightly
+                  height: 155,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -389,16 +554,38 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
   Widget _buildScatteredAuras(double sw, double sh) {
     return Stack(
       children: [
-        Positioned(top: 100, left: 20, child: _buildAura(60, AppColors.primary.withOpacity(0.25))),
-        Positioned(top: sh * 0.3, right: 40, child: _buildAura(80, AppColors.primary.withOpacity(0.15))),
-        Positioned(bottom: sh * 0.35, left: sw * 0.15, child: _buildAura(70, AppColors.accent.withOpacity(0.2))),
-        Positioned(top: 250, left: sw * 0.6, child: _buildAura(50, AppColors.primary.withOpacity(0.3))),
-        Positioned(bottom: 250, right: -10, child: _buildAura(100, AppColors.secondary.withOpacity(0.12))),
+        Positioned(
+          top: -50,
+          left: -50,
+          child: _buildAura(400, AppColors.primary.withOpacity(0.15)),
+        ),
+        Positioned(
+          top: sh * 0.2,
+          right: -100,
+          child: _buildAura(350, AppColors.primary.withOpacity(0.1)),
+        ),
+        Positioned(
+          bottom: sh * 0.2,
+          left: -100,
+          child: _buildAura(300, AppColors.accent.withOpacity(0.12)),
+        ),
+        Positioned(
+          top: sh * 0.5,
+          left: sw * 0.4,
+          child: _buildAura(250, AppColors.primary.withOpacity(0.1)),
+        ),
       ],
     );
   }
 
   Widget _buildAura(double size, Color color) {
-    return Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(color.opacity * 2), blurRadius: size, spreadRadius: size / 2)]));
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+      ),
+    );
   }
 }

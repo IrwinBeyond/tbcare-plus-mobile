@@ -94,20 +94,7 @@ class HomeHeader extends StatelessWidget {
           GestureDetector(
             onTap: () {
               if (ModalRoute.of(context)?.settings.name != AppRoutes.profile) {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(),
-                    settings: const RouteSettings(name: AppRoutes.profile),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(1.0, 0.0);
-                      const end = Offset.zero;
-                      const curve = Curves.easeInOut;
-                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                      return SlideTransition(position: animation.drive(tween), child: child);
-                    },
-                  ),
-                );
+                Navigator.pushNamed(context, AppRoutes.profile);
               }
             },
             child: Column(

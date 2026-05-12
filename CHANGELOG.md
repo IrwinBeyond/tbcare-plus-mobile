@@ -19,5 +19,7 @@ All notable changes to this project will be documented in this file.
 - Updated route configuration to handle arguments for history details.
 
 ### Removed
+- Page transition animations globally to provide instant page appearance.
+- Custom slide transitions in HomeHeader and GuestBottomNav.
 - Redundant "View Symptom Insights" button from Result Page (integrated into history).
 - Decorative blur circles in Profile Page for a cleaner look.

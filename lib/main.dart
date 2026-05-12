@@ -15,7 +15,19 @@ class MyApp extends StatelessWidget {
       title: 'TB Care Plus',
       theme: AppTheme.lightTheme,
       initialRoute: AppRoutes.cover,
-      routes: AppRoutes.routes,
+      onGenerateRoute: (settings) {
+        final builder = AppRoutes.routes[settings.name];
+        if (builder != null) {
+          return PageRouteBuilder(
+            settings: settings,
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                builder(context),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          );
+        }
+        return null;
+      },
       debugShowCheckedModeBanner: false,
     );
   }

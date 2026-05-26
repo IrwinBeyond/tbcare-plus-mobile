@@ -98,7 +98,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       (q) => q.tbTypeId == tbTypeId,
       orElse: () => _config!.questions.first,
     );
-    return first.tbTypeName ?? 'Category $tbTypeId';
+    return first.tbTypeName ?? 'Kategori $tbTypeId';
   }
 
   int get _answeredCount {
@@ -147,7 +147,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
         final matchedLevel = _config!.findRiskLevel(percentage, tbTypeId);
 
         results.add({
-          'tbTypeName': questions.first.tbTypeName ?? 'Category $tbTypeId',
+          'tbTypeName': questions.first.tbTypeName ?? 'Kategori $tbTypeId',
           'tbTypeCode': questions.first.symptomCode.split('_').first,
           'totalScore': percentage,
           'riskLevel': matchedLevel != null
@@ -158,7 +158,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   'recommendation': matchedLevel.recommendation ?? '',
                 }
               : {
-                  'title': 'Low Risk',
+                  'title': 'Risiko Rendah',
                   'code': 'LOW',
                   'description': '',
                   'recommendation': '',
@@ -250,19 +250,19 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
           const Icon(Icons.lock_outline_rounded, size: 64, color: AppColors.mutedForeground),
           const SizedBox(height: 16),
           const Text(
-            'Authentication Required',
+            'Autentikasi Diperlukan',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.foreground),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Please log in to start a Full Assessment.',
+            'Silakan masuk untuk memulai Pemeriksaan Lengkap.',
             style: TextStyle(color: AppColors.mutedForeground),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Go to Login', style: TextStyle(color: Colors.white)),
+            child: const Text('Pergi ke Login', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -446,7 +446,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             child: Column(
               children: [
                 const Text(
-                  'Full Health Assessment',
+                  'Pemeriksaan Kesehatan Lengkap',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -462,7 +462,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(
-                    '$_answeredCount/$_totalQuestions ANSWERED',
+                    '$_answeredCount/$_totalQuestions TERJAWAB',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
@@ -928,7 +928,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                 ),
               ),
               child: const Text(
-                'Submit Assessment',
+                'Kirim Pemeriksaan',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -1035,7 +1035,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                                 const SizedBox(width: 16),
                                 const Expanded(
                                   child: Text(
-                                    'Login Required',
+                                    'Login Diperlukan',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,
@@ -1072,7 +1072,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                                       ),
                                     ),
                                     child: const Text(
-                                      'Log In Now',
+                                      'Masuk Sekarang',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,

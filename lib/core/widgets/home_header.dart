@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import '../../features/profile/pages/profile_page.dart';
 
 class HomeHeader extends StatelessWidget {
   final bool isGuest;
   final String? userName;
-  const HomeHeader({super.key, this.isGuest = true, this.userName});
+  final bool showProfile;
+  const HomeHeader({
+    super.key,
+    this.isGuest = true,
+    this.userName,
+    this.showProfile = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -92,49 +97,57 @@ class HomeHeader extends StatelessWidget {
           ),
 
           // Right: Avatar + Greeting (navigates to Profile)
-          GestureDetector(
-            onTap: () {
-              if (ModalRoute.of(context)?.settings.name != AppRoutes.profile) {
-                Navigator.pushNamed(context, AppRoutes.profile);
-              }
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    image: const DecorationImage(
-                      image: NetworkImage('https://storage.googleapis.com/banani-avatars/avatar/male/18-25/European/4'),
-                      fit: BoxFit.cover,
+          if (showProfile)
+            GestureDetector(
+              onTap: () {
+                if (ModalRoute.of(context)?.settings.name != AppRoutes.profile) {
+                  Navigator.pushNamed(context, AppRoutes.profile);
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isGuest ? AppColors.muted.withOpacity(0.3) : null,
+                      border: Border.all(color: Colors.white, width: 2),
+                      image: isGuest
+                          ? null
+                          : const DecorationImage(
+                              image: NetworkImage('https://storage.googleapis.com/banani-avatars/avatar/male/18-25/European/4'),
+                              fit: BoxFit.cover,
+                            ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                    child: isGuest
+                        ? const Icon(Icons.person_outline_rounded, color: AppColors.mutedForeground, size: 24)
+                        : null,
+                  ),
+                  if (!isGuest) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Halo, ${(userName != null && userName!.isNotEmpty) ? userName! : 'Pengguna'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.mutedForeground,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  isGuest
-                      ? 'Hello, User'
-                      : 'Hello, ${(userName != null && userName!.isNotEmpty) ? userName! : 'User'}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.mutedForeground,
-                  ),
-                ),
-
-              ],
-            ),
-          ),
+                    ),
+                  ],
+                ],
+              ),
+            )
+          else
+            const SizedBox.shrink(),
         ],
       ),
     );

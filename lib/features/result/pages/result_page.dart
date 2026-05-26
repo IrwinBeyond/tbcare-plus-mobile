@@ -100,9 +100,9 @@ class _ResultPageState extends State<ResultPage> {
       case RiskLevel.low:
         return {
           'percentage': _percentage,
-          'title': 'Low Risk',
-          'subtitle': 'You show low indications of TBC',
-          'description': 'Your current symptoms do not strongly indicate TBC. Stay healthy and monitor your condition.',
+          'title': 'Risiko Rendah',
+          'subtitle': 'Anda menunjukkan indikasi rendah TBC',
+          'description': 'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.',
           'color': AppColors.primary,
           'icon': Icons.check_circle_outline,
           'auraColor': AppColors.primary.withOpacity(0.1),
@@ -110,9 +110,9 @@ class _ResultPageState extends State<ResultPage> {
       case RiskLevel.medium:
         return {
           'percentage': _percentage,
-          'title': 'Medium Risk',
-          'subtitle': 'Some symptoms require attention',
-          'description': 'You show some symptoms related to TBC. It is recommended to continue with a more detailed assessment.',
+          'title': 'Risiko Sedang',
+          'subtitle': 'Beberapa gejala memerlukan perhatian',
+          'description': 'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.',
           'color': AppColors.warning,
           'icon': Icons.info_outline,
           'auraColor': AppColors.warning.withOpacity(0.1),
@@ -120,9 +120,9 @@ class _ResultPageState extends State<ResultPage> {
       case RiskLevel.high:
         return {
           'percentage': _percentage,
-          'title': 'High Risk',
-          'subtitle': 'Strong indication of TBC symptoms',
-          'description': 'Your symptoms strongly indicate potential TBC. Please proceed with a full assessment and seek medical attention.',
+          'title': 'Risiko Tinggi',
+          'subtitle': 'Indikasi kuat gejala TBC',
+          'description': 'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.',
           'color': AppColors.destructive,
           'icon': Icons.report_problem_outlined,
           'auraColor': AppColors.destructive.withOpacity(0.1),
@@ -161,7 +161,7 @@ class _ResultPageState extends State<ResultPage> {
                   child: Column(
                     children: [
                       Text(
-                        _isFullAssessment ? 'Full Assessment Result' : 'Screening Result',
+                        _isFullAssessment ? 'Hasil Pemeriksaan Lengkap' : 'Hasil Skrining',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -172,8 +172,8 @@ class _ResultPageState extends State<ResultPage> {
                       const SizedBox(height: 8),
                       Text(
                         _isFullAssessment
-                            ? 'Your comprehensive TB risk analysis across all categories.'
-                            : 'Based on your answers, here is your risk assessment.',
+                            ? 'Analisis risiko TBC menyeluruh Anda di semua kategori.'
+                            : 'Berdasarkan jawaban Anda, berikut adalah penilaian risiko Anda.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 14,
@@ -205,7 +205,12 @@ class _ResultPageState extends State<ResultPage> {
               onTap: (i) {
                 final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
                 if (i < routes.length) {
-                  Navigator.pushNamedAndRemoveUntil(context, routes[i], (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    routes[i],
+                    (route) => false,
+                    arguments: {'isGuest': _isGuest},
+                  );
                 }
               },
             ),
@@ -215,7 +220,7 @@ class _ResultPageState extends State<ResultPage> {
   // ─── FULL ASSESSMENT MULTI-CATEGORY RESULT ────────────────
   Widget _buildFullResultList() {
     if (_fullResultData == null) {
-      return const Center(child: Text('No result data found.'));
+      return const Center(child: Text('Data hasil tidak ditemukan.'));
     }
 
     final resultsList = _fullResultData!['results'] as List<dynamic>? ?? [];
@@ -227,11 +232,11 @@ class _ResultPageState extends State<ResultPage> {
             itemCount: resultsList.length,
             itemBuilder: (context, index) {
               final item = resultsList[index] as Map<String, dynamic>;
-              final tbTypeName = item['tbTypeName'] as String? ?? 'Unknown';
+              final tbTypeName = item['tbTypeName'] as String? ?? 'Tidak Diketahui';
               final totalScore = (item['totalScore'] as num?)?.toDouble() ?? 0.0;
               final scorePercent = totalScore.round();
               final riskLevelMap = item['riskLevel'] as Map<String, dynamic>?;
-              final riskTitle = riskLevelMap?['title'] as String? ?? 'Low Risk';
+              final riskTitle = riskLevelMap?['title'] as String? ?? 'Risiko Rendah';
               final riskCode = (riskLevelMap?['code'] as String? ?? 'LOW').toUpperCase();
               final recommendation = riskLevelMap?['recommendation'] as String? ?? '';
               final symptomDetails = item['symptomDetails'] as List<dynamic>? ?? [];
@@ -476,7 +481,7 @@ class _ResultPageState extends State<ResultPage> {
               shadowColor: AppColors.primary.withOpacity(0.4),
             ),
             child: const Text(
-              'Back to Home',
+              'Kembali ke Beranda',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -535,7 +540,7 @@ class _ResultPageState extends State<ResultPage> {
                               ),
                             ),
                             Text(
-                              '${(data['title'] as String).split(' ')[0].toUpperCase()} RISK',
+                              '${(data['title'] as String).split(' ')[0].toUpperCase()} RISIKO',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -598,7 +603,7 @@ class _ResultPageState extends State<ResultPage> {
                 const SizedBox(height: 32),
                 if (_currentRisk != RiskLevel.low) ...[
                   _buildButton(
-                    'Continue Full Assessment',
+                    'Lanjutkan Pemeriksaan Lengkap',
                     mainColor,
                     Colors.white,
                     true,
@@ -608,7 +613,7 @@ class _ResultPageState extends State<ResultPage> {
                   const SizedBox(height: 12),
                 ],
                 _buildButton(
-                  _currentRisk == RiskLevel.low ? 'Back to Home' : 'Find Nearby Clinic',
+                  _currentRisk == RiskLevel.low ? 'Kembali ke Beranda' : 'Cari Klinik Terdekat',
                   _currentRisk == RiskLevel.low ? Colors.white : Colors.transparent,
                   mainColor,
                   false,

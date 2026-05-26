@@ -52,49 +52,49 @@ class QuickCheckConfig {
       questions: [
         QuickCheckQuestion(
           questionId: 1, symptomId: 1, symptomCode: 'COUGH_2W',
-          symptomName: 'Persistent Cough', questionText: 'Persistent cough for 2+ weeks',
+          symptomName: 'Batuk Terus-menerus', questionText: 'Batuk terus-menerus selama 2+ minggu',
           sortOrder: 1, weight: 0.15, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 2, symptomId: 2, symptomCode: 'COUGH_BLOOD',
-          symptomName: 'Coughing Up Blood', questionText: 'Coughing up blood',
+          symptomName: 'Batuk Darah', questionText: 'Batuk berdarah',
           sortOrder: 2, weight: 0.20, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 3, symptomId: 3, symptomCode: 'CHEST_PAIN',
-          symptomName: 'Chest Pain', questionText: 'Chest pain or tightness',
+          symptomName: 'Nyeri Dada', questionText: 'Nyeri atau sesak dada',
           sortOrder: 3, weight: 0.10, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 4, symptomId: 4, symptomCode: 'SHORT_BREATH',
-          symptomName: 'Shortness of Breath', questionText: 'Shortness of breath',
+          symptomName: 'Sesak Napas', questionText: 'Sesak napas',
           sortOrder: 4, weight: 0.10, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 5, symptomId: 5, symptomCode: 'WEIGHT_LOSS',
-          symptomName: 'Weight Loss', questionText: 'Unexplained weight loss',
+          symptomName: 'Penurunan Berat Badan', questionText: 'Penurunan berat badan tanpa sebab',
           sortOrder: 5, weight: 0.15, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 6, symptomId: 6, symptomCode: 'FEVER',
-          symptomName: 'Prolonged Fever', questionText: 'Prolonged fever or chills',
+          symptomName: 'Demam Berkepanjangan', questionText: 'Demam berkepanjangan atau menggigil',
           sortOrder: 6, weight: 0.10, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 7, symptomId: 7, symptomCode: 'NIGHT_SWEATS',
-          symptomName: 'Night Sweats', questionText: 'Night sweats',
+          symptomName: 'Keringat Malam', questionText: 'Keringat malam',
           sortOrder: 7, weight: 0.10, tbTypeId: 1,
         ),
         QuickCheckQuestion(
           questionId: 8, symptomId: 8, symptomCode: 'FATIGUE',
-          symptomName: 'Fatigue & Weakness', questionText: 'Feeling weak or fatigued',
+          symptomName: 'Kelelahan & Kelemahan', questionText: 'Merasa lemah atau lelah',
           sortOrder: 8, weight: 0.10, tbTypeId: 1,
         ),
       ],
       riskLevels: [
-        RiskLevelConfig(id: 1, tbTypeId: 1, code: 'LOW', title: 'Low Risk', minScore: 0, maxScore: 30),
-        RiskLevelConfig(id: 2, tbTypeId: 1, code: 'MEDIUM', title: 'Medium Risk', minScore: 31, maxScore: 60),
-        RiskLevelConfig(id: 3, tbTypeId: 1, code: 'HIGH', title: 'High Risk', minScore: 61, maxScore: 100),
+        RiskLevelConfig(id: 1, tbTypeId: 1, code: 'LOW', title: 'Risiko Rendah', minScore: 0, maxScore: 30),
+        RiskLevelConfig(id: 2, tbTypeId: 1, code: 'MEDIUM', title: 'Risiko Sedang', minScore: 31, maxScore: 60),
+        RiskLevelConfig(id: 3, tbTypeId: 1, code: 'HIGH', title: 'Risiko Tinggi', minScore: 61, maxScore: 100),
       ],
     );
   }

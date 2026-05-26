@@ -64,14 +64,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Color get _riskColor {
-    switch (_risk) {
-      case RiskLevel.low:
-        return AppColors.primary;
-      case RiskLevel.medium:
-        return AppColors.warning;
-      case RiskLevel.high:
-        return AppColors.destructive;
+  bool _argumentsLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_argumentsLoaded) {
+      _argumentsLoaded = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map) {
+        if (args.containsKey('isGuest')) {
+          _isGuest = args['isGuest'] as bool;
+        }
+      }
     }
   }
 
@@ -139,14 +144,6 @@ class _HomePageState extends State<HomePage> {
                           _buildLoadingCard()
                         else
                           _buildAssessmentCard(),
-                        const SizedBox(height: 24),
-                        _buildSectionTitle('Symptom Insights'),
-                        const SizedBox(height: 16),
-                        _buildInsightItem(
-                          Icons.lightbulb_outline,
-                          'Early detection saves lives',
-                          'TBC symptoms often start subtle. Regular checks are vital.',
-                        ),
                       ],
                     ),
                   ),
@@ -163,7 +160,12 @@ class _HomePageState extends State<HomePage> {
               onTap: (i) {
                 final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
                 if (i < routes.length) {
-                  Navigator.pushNamedAndRemoveUntil(context, routes[i], (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    routes[i],
+                    (route) => false,
+                    arguments: {'isGuest': _isGuest},
+                  );
                 }
               },
             ),
@@ -190,7 +192,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildAssessmentCard() {
     final config = _config!;
-    final pct = _percentage;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(32),
@@ -220,7 +221,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Quick TBC Check',
+                        'Cek TBC Cepat',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
@@ -228,7 +229,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       Text(
-                        '${config.questions.length} symptoms to review',
+                        '${config.questions.length} gejala untuk ditinjau',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.mutedForeground,
@@ -237,57 +238,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  if (pct > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _riskColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$pct% · ${_matchedRiskLevel?.code.toUpperCase() ?? ''}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _riskColor,
-                        ),
-                      ),
-                    ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              Stack(
-                children: [
-                  Container(
-                    height: 8,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.muted.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    height: 8,
-                    width: (MediaQuery.of(context).size.width - 96) * (_percentage / 100).clamp(0.0, 1.0),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.secondary],
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 24),
 
               // Dynamic symptom items from backend
@@ -402,7 +354,7 @@ class _HomePageState extends State<HomePage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         child: const Text(
-          'Check My Risk',
+          'Periksa Risiko Saya',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
@@ -448,61 +400,6 @@ class _HomePageState extends State<HomePage> {
         'percentage': pct,
         'assessmentData': assessmentData,
       },
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.foreground,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInsightItem(IconData icon, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.foreground,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.mutedForeground,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

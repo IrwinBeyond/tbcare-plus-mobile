@@ -17,6 +17,22 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _isGuest = true;
   String? _userName;
 
+  bool _argumentsLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_argumentsLoaded) {
+      _argumentsLoaded = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map) {
+        if (args.containsKey('isGuest')) {
+          _isGuest = args['isGuest'] as bool;
+        }
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +78,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'History Check',
+                          'Riwayat Pemeriksaan',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
@@ -71,7 +87,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                         const Text(
-                          'Your recent screening results',
+                          'Hasil skrining terbaru Anda',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -98,7 +114,12 @@ class _HistoryPageState extends State<HistoryPage> {
               onTap: (i) {
                 final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
                 if (i < routes.length) {
-                  Navigator.pushNamedAndRemoveUntil(context, routes[i], (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    routes[i],
+                    (route) => false,
+                    arguments: {'isGuest': _isGuest},
+                  );
                 }
               },
             ),
@@ -108,42 +129,42 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget _buildTimelineList() {
     final historyItems = [
       {
-        'date': 'TODAY, APR 25',
-        'riskLevel': 'High Risk',
+        'date': 'HARI INI, 25 APR',
+        'riskLevel': 'Risiko Tinggi',
         'percentage': '72%',
-        'type': 'FULL ASSESSMENT',
+        'type': 'PEMERIKSAAN LENGKAP',
         'color': const Color(0xFFEF4444),
         'icon': Icons.error_outline_rounded,
       },
       {
         'date': 'APR 20, 2026',
-        'riskLevel': 'Medium Risk',
+        'riskLevel': 'Risiko Sedang',
         'percentage': '45%',
-        'type': 'QUICK CHECK',
+        'type': 'PEMERIKSAAN CEPAT',
         'color': const Color(0xFFF59E0B),
         'icon': Icons.warning_amber_rounded,
       },
       {
         'date': 'APR 10, 2026',
-        'riskLevel': 'Low Risk',
+        'riskLevel': 'Risiko Rendah',
         'percentage': '12%',
-        'type': 'QUICK CHECK',
+        'type': 'PEMERIKSAAN CEPAT',
         'color': const Color(0xFF10B981),
         'icon': Icons.check_circle_outline_rounded,
       },
       {
         'date': 'MAR 28, 2026',
-        'riskLevel': 'High Risk',
+        'riskLevel': 'Risiko Tinggi',
         'percentage': '85%',
-        'type': 'FULL ASSESSMENT',
+        'type': 'PEMERIKSAAN LENGKAP',
         'color': const Color(0xFFEF4444),
         'icon': Icons.error_outline_rounded,
       },
       {
         'date': 'MAR 15, 2026',
-        'riskLevel': 'Medium Risk',
+        'riskLevel': 'Risiko Sedang',
         'percentage': '55%',
-        'type': 'QUICK CHECK',
+        'type': 'PEMERIKSAAN CEPAT',
         'color': const Color(0xFFF59E0B),
         'icon': Icons.warning_amber_rounded,
       },
@@ -281,7 +302,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                         Text(
-                          '${item['percentage']} Risk Level',
+                          '${item['percentage']} Tingkat Risiko',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,

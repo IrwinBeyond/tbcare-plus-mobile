@@ -34,9 +34,9 @@ class AboutPage extends StatelessWidget {
                         // What is TBCare+?
                         _buildInfoCard(
                           icon: Icons.info_outline_rounded,
-                          title: 'What is TBCare+?',
+                          title: 'Apa itu TBCare+?',
                           child: const Text(
-                            'TBCare+ is a digital health application designed to support early detection of tuberculosis (TBC) through symptom-based screening and health awareness.',
+                            'TBCare+ adalah aplikasi kesehatan digital yang dirancang untuk mendukung deteksi dini tuberkulosis (TBC) melalui skrining berbasis gejala dan kesadaran kesehatan.',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -50,14 +50,14 @@ class AboutPage extends StatelessWidget {
                         // Our Purpose
                         _buildInfoCard(
                           icon: Icons.gps_fixed_rounded,
-                          title: 'Our Purpose',
+                          title: 'Tujuan Kami',
                           child: Column(
                             children: [
-                              _buildCheckItem('Help users identify early symptoms of TBC'),
+                              _buildCheckItem('Membantu pengguna mengidentifikasi gejala awal TBC'),
                               const SizedBox(height: 12),
-                              _buildCheckItem('Encourage timely medical consultation'),
+                              _buildCheckItem('Mendorong konsultasi medis tepat waktu'),
                               const SizedBox(height: 12),
-                              _buildCheckItem('Increase awareness about tuberculosis'),
+                              _buildCheckItem('Meningkatkan kesadaran tentang tuberkulosis'),
                             ],
                           ),
                         ),
@@ -66,7 +66,7 @@ class AboutPage extends StatelessWidget {
                         // How It Works
                         _buildInfoCard(
                           icon: Icons.list_alt_rounded,
-                          title: 'How It Works',
+                          title: 'Cara Kerja',
                           child: _buildTimeline(),
                         ),
                         const SizedBox(height: 20),
@@ -78,9 +78,9 @@ class AboutPage extends StatelessWidget {
                         // About Tuberculosis
                         _buildInfoCard(
                           icon: Icons.monitor_heart_outlined,
-                          title: 'About Tuberculosis',
+                          title: 'Tentang Tuberkulosis',
                           child: const Text(
-                            'Tuberculosis is an airborne infectious disease caused by bacteria that primarily affects the lungs but can also impact other parts of the body.',
+                            'Tuberkulosis adalah penyakit menular melalui udara yang disebabkan oleh bakteri yang terutama menyerang paru-paru tetapi juga dapat memengaruhi bagian tubuh lainnya.',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -138,7 +138,7 @@ class AboutPage extends StatelessWidget {
 
           // Title
           const Text(
-            'About This App',
+            'Tentang Aplikasi Ini',
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -149,7 +149,7 @@ class AboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Learn more about TBCare+',
+            'Pelajari lebih lanjut tentang TBCare+',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -255,9 +255,9 @@ class AboutPage extends StatelessWidget {
   // ─── TIMELINE ─────────────────────────────────────────────
   Widget _buildTimeline() {
     final steps = [
-      'Answer a short or full health assessment',
-      'Receive a risk evaluation',
-      'Get recommendations based on your condition',
+      'Jawab pemeriksaan kesehatan singkat atau lengkap',
+      'Terima evaluasi risiko',
+      'Dapatkan rekomendasi berdasarkan kondisi Anda',
     ];
 
     return Column(
@@ -364,7 +364,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'Disclaimer',
+                    'Penafian',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -375,7 +375,7 @@ class AboutPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'This application is not a substitute for professional medical diagnosis. Users are advised to consult a healthcare provider for accurate examination and treatment.',
+                'Aplikasi ini bukan pengganti diagnosis medis profesional. Pengguna disarankan untuk berkonsultasi dengan penyedia layanan kesehatan untuk pemeriksaan dan perawatan yang akurat.',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -426,7 +426,7 @@ class AboutPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Version 1.0 • Developed for\neducational and health\nawareness purposes',
+          'Versi 1.0 • Dikembangkan untuk\ntujuan edukasi dan\nkesadaran kesehatan',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,

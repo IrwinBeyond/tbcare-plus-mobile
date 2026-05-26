@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -12,15 +13,66 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(context, Icons.home_rounded, 'Beranda', 0),
+          _buildNavItem(context, Icons.history_rounded, 'Riwayat', 1),
+          _buildNavItem(context, Icons.person_rounded, 'Profil', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+    bool isActive = currentIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        if (!isActive) {
+          onTap(index);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
+              size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

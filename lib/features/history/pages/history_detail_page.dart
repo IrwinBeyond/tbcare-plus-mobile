@@ -16,29 +16,29 @@ class HistoryDetailPage extends StatelessWidget {
     // Filter symptoms where status is true
     final List<dynamic> rawSymptoms = item['symptoms'] ?? [
       {
-        'name': 'Chronic Cough',
+        'name': 'Batuk Kronis',
         'status': true,
-        'desc': 'Cough lasting more than 2 weeks. This can be a sign of various respiratory issues and requires careful monitoring by medical professionals to ensure proper diagnosis.'
+        'desc': 'Batuk yang berlangsung lebih dari 2 minggu. Ini bisa menjadi tanda berbagai masalah pernapasan dan memerlukan pemantauan oleh tenaga medis untuk memastikan diagnosis yang tepat.'
       },
       {
-        'name': 'Chest Pain',
+        'name': 'Nyeri Dada',
         'status': true,
-        'desc': 'Sharp pain when breathing or coughing. It might indicate inflammation of the lung lining or other serious conditions that need immediate attention and diagnostic tests.'
+        'desc': 'Nyeri tajam saat bernapas atau batuk. Ini mungkin mengindikasikan peradangan pada lapisan paru-paru atau kondisi serius lainnya yang memerlukan perhatian segera dan tes diagnostik.'
       },
       {
-        'name': 'Fatigue',
+        'name': 'Kelelahan',
         'status': true,
-        'desc': 'Feeling unusually tired or weak. This is a common systemic symptom that can significantly impact daily activities and is often seen in chronic infections.'
+        'desc': 'Merasa sangat lelah atau lemah. Ini adalah gejala sistemik umum yang dapat berdampak signifikan pada aktivitas sehari-hari dan sering terlihat pada infeksi kronis.'
       },
       {
-        'name': 'Night Sweats',
+        'name': 'Keringat Malam',
         'status': false,
-        'desc': 'Heavy sweating during sleep. Often accompanied by fever, this is a classic symptom of some infections like tuberculosis.'
+        'desc': 'Berkeringat deras saat tidur. Sering disertai demam, ini adalah gejala klasik dari beberapa infeksi seperti tuberkulosis.'
       },
       {
-        'name': 'Weight Loss',
+        'name': 'Penurunan Berat Badan',
         'status': true,
-        'desc': 'Unexplained weight reduction. Losing weight without trying can be a sign of a serious underlying health problem and should be investigated by a doctor.'
+        'desc': 'Penurunan berat badan yang tidak dapat dijelaskan. Kehilangan berat badan tanpa usaha bisa menjadi tanda masalah kesehatan serius dan harus diperiksa oleh dokter.'
       },
     ];
 
@@ -67,7 +67,7 @@ class HistoryDetailPage extends StatelessWidget {
 
                         // Insight Section
                         const Text(
-                          'Symptom Insights',
+                          'Wawasan Gejala',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -123,7 +123,7 @@ class HistoryDetailPage extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           const Text(
-            'Check Detail',
+            'Detail Pemeriksaan',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -198,7 +198,7 @@ class HistoryDetailPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Risk Level',
+                    'Tingkat Risiko',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -225,7 +225,7 @@ class HistoryDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Requires immediate attention',
+                      'Memerlukan perhatian segera',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -385,7 +385,7 @@ class HistoryDetailPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
                             const Text(
-                              'EXPLANATION',
+                              'PENJELASAN',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
@@ -418,7 +418,7 @@ class HistoryDetailPage extends StatelessWidget {
                                   shadowColor: color.withOpacity(0.4),
                                 ),
                                 child: const Text(
-                                  'Got it, thanks',
+                                  'Mengerti, terima kasih',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -468,7 +468,7 @@ class HistoryDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Recommendation',
+                  'Rekomendasi',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -477,7 +477,7 @@ class HistoryDetailPage extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Please visit the nearest health facility for a sputum test or chest X-ray.',
+                  'Silakan kunjungi fasilitas kesehatan terdekat untuk tes dahak atau rontgen dada.',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,

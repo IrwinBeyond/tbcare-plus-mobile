@@ -14,6 +14,7 @@ class GuestBottomNav extends StatelessWidget {
       context,
       routeName,
       (route) => false,
+      arguments: const {'isGuest': true},
     );
   }
 
@@ -35,8 +36,8 @@ class GuestBottomNav extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(context, Icons.home_rounded, 'Home', 0),
-          _buildNavItem(context, Icons.person_rounded, 'Profile', 1),
+          _buildNavItem(context, Icons.home_rounded, 'Beranda', 0),
+          _buildNavItem(context, Icons.person_rounded, 'Profil', 1),
         ],
       ),
     );
@@ -70,17 +71,15 @@ class GuestBottomNav extends StatelessWidget {
               color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
               size: 26,
             ),
-            if (isActive) ...[
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
               ),
-            ],
+            ),
           ],
         ),
       ),

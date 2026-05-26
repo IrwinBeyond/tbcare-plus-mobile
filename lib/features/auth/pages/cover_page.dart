@@ -171,11 +171,11 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            'Welcome Back',
+                            'Selamat Datang Kembali',
                             style: AppTextStyles.heading1,
                           ),
                           const Text(
-                            'Login to your account',
+                            'Masuk ke akun Anda',
                             style: AppTextStyles.bodyMedium,
                           ),
                         ],
@@ -262,7 +262,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
           const Text('TBCare+', style: AppTextStyles.heading1),
           const SizedBox(height: 12),
           const Text(
-            'Early Detection for Better Health. Track your symptoms and get accurate insights instantly.',
+            'Deteksi Dini untuk Kesehatan Lebih Baik. Pantau gejala Anda dan dapatkan wawasan akurat secara instan.',
             style: AppTextStyles.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -279,23 +279,23 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
       child: Column(
         children: [
-          _buildLabel('Email Address'),
+          _buildLabel('Alamat Email'),
           const SizedBox(height: 8),
-          _buildTextField(hint: 'Enter your email', icon: Icons.mail_outline),
+          _buildTextField(hint: 'Masukkan email Anda', icon: Icons.mail_outline),
           const SizedBox(height: 20),
-          _buildLabel('Password'),
+          _buildLabel('Kata Sandi'),
           const SizedBox(height: 8),
           _buildTextField(
-            hint: 'Enter your password',
+            hint: 'Masukkan kata sandi Anda',
             icon: Icons.lock_outline,
             isPassword: true,
           ),
           const SizedBox(height: 30),
           _buildLoginButton(),
           const SizedBox(height: 20),
-          const Text("Don't have an account?", style: AppTextStyles.bodyMedium),
+          const Text('Belum punya akun?', style: AppTextStyles.bodyMedium),
           const SizedBox(height: 12),
-          _buildSecondaryButton('Create Account', () {
+          _buildSecondaryButton('Buat Akun', () {
             Navigator.pushNamed(context, AppRoutes.register);
           }),
         ],
@@ -337,13 +337,13 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               ),
             ),
             child: const Text(
-              'Get Started',
+              'Mulai',
               style: AppTextStyles.buttonPrimary,
             ),
           ),
         ),
         const SizedBox(height: 14),
-        _buildSecondaryButton('Continue as Guest', () {
+        _buildSecondaryButton('Lanjutkan sebagai Tamu', () {
           Navigator.pushNamed(context, AppRoutes.home);
         }),
       ],
@@ -365,7 +365,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Login', style: AppTextStyles.buttonPrimary),
+            Text('Masuk', style: AppTextStyles.buttonPrimary),
             SizedBox(width: 8),
             Icon(Icons.arrow_forward, size: 20, color: Colors.white),
           ],

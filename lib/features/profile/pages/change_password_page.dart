@@ -7,7 +7,7 @@ class ChangePasswordPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Change Password Page'),
+        child: Text('Halaman Ganti Kata Sandi'),
       ),
     );
   }

@@ -88,8 +88,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildBackButton(context),
                     const SizedBox(height: 32),
 
-                    const Text('Create Account', style: AppTextStyles.heading1),
-                    const Text('Start your health journey',
+                    const Text('Buat Akun', style: AppTextStyles.heading1),
+                    const Text('Mulai perjalanan kesehatan Anda',
                         style: AppTextStyles.bodyMedium),
                     const SizedBox(height: 32),
 
@@ -160,11 +160,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 20),
               ],
 
-              _buildLabel('Nickname'),
+              _buildLabel('Nama Lengkap'),
               const SizedBox(height: 8),
               _buildTextFormField(
                 controller: _fullNameCtrl,
-                hint: 'Enter your nickname',
+                hint: 'Masukkan nama lengkap Anda',
                 icon: Icons.badge_outlined,
                 textInputAction: TextInputAction.next,
                 validator: (v) {
@@ -175,11 +175,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              _buildLabel('Email Address'),
+              _buildLabel('Alamat Email'),
               const SizedBox(height: 8),
               _buildTextFormField(
                 controller: _emailCtrl,
-                hint: 'Enter your email address',
+                hint: 'Masukkan alamat email Anda',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
@@ -191,11 +191,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              _buildLabel('Password'),
+              _buildLabel('Kata Sandi'),
               const SizedBox(height: 8),
               _buildPasswordFormField(
                 controller: _passwordCtrl,
-                hint: 'Create a password',
+                hint: 'Buat kata sandi',
                 icon: Icons.lock_outline,
                 obscure: _obscurePassword,
                 onToggle: () =>
@@ -209,11 +209,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              _buildLabel('Confirm Password'),
+              _buildLabel('Konfirmasi Kata Sandi'),
               const SizedBox(height: 8),
               _buildPasswordFormField(
                 controller: _confirmPasswordCtrl,
-                hint: 'Repeat your password',
+                hint: 'Ulangi kata sandi Anda',
                 icon: Icons.shield_outlined,
                 obscure: _obscureConfirmPassword,
                 onToggle: () => setState(
@@ -256,7 +256,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Create Account',
+                            Text('Buat Akun',
                                 style: AppTextStyles.buttonPrimary),
                             SizedBox(width: 8),
                             Icon(Icons.arrow_forward, size: 20),
@@ -407,7 +407,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildFooter(BuildContext context) {
     return Column(
       children: [
-        const Text('Already have an account?', style: AppTextStyles.bodyMedium),
+        const Text('Sudah punya akun?', style: AppTextStyles.bodyMedium),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
@@ -420,7 +420,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(20)),
             ),
             child: const Text(
-              'Login to Account',
+              'Masuk ke Akun',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,

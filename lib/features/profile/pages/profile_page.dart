@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/guest_bottom_nav.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/widgets/home_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,6 +19,22 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isGuest = true;
   String? _userName;
   String? _userEmail;
+
+  bool _argumentsLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_argumentsLoaded) {
+      _argumentsLoaded = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map) {
+        if (args.containsKey('isGuest')) {
+          _isGuest = args['isGuest'] as bool;
+        }
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -67,7 +84,11 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               children: [
                 // Header
-                _buildHeader(),
+                HomeHeader(
+                  isGuest: _isGuest,
+                  userName: _userName,
+                  showProfile: false,
+                ),
 
                 // Scrollable Content
                 Expanded(
@@ -84,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            'General',
+                            'Umum',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -99,7 +120,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildMenuItem(
                           context,
                           icon: Icons.info_outline_rounded,
-                          label: 'About This App',
+                          label: 'Tentang Aplikasi Ini',
                           onTap: () => Navigator.pushNamed(context, AppRoutes.about),
                         ),
 
@@ -110,21 +131,21 @@ class _ProfilePageState extends State<ProfilePage> {
                           _buildMenuItem(
                             context,
                             icon: Icons.edit_outlined,
-                            label: 'Edit Profile',
+                            label: 'Edit Profil',
                             onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
                           ),
                           const SizedBox(height: 12),
                           _buildMenuItem(
                             context,
                             icon: Icons.lock_outline_rounded,
-                            label: 'Change Password',
+                            label: 'Ganti Kata Sandi',
                             onTap: () => Navigator.pushNamed(context, AppRoutes.changePassword),
                           ),
                           const SizedBox(height: 12),
                           _buildMenuItem(
                             context,
                             icon: Icons.logout_rounded,
-                            label: 'Logout',
+                            label: 'Keluar',
                             onTap: () async {
                               await StorageService.clear();
                               if (!mounted) return;
@@ -152,44 +173,19 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: (i) {
                 final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
                 if (i < routes.length) {
-                  Navigator.pushNamedAndRemoveUntil(context, routes[i], (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    routes[i],
+                    (route) => false,
+                    arguments: {'isGuest': _isGuest},
+                  );
                 }
               },
             ),
     );
   }
 
-  // ─── HEADER ───────────────────────────────────────────────
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: AppColors.foreground,
-              letterSpacing: -0.5,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isGuest ? 'Guest Account' : 'Signed In',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
+
 
   // ─── GUEST CARD ───────────────────────────────────────────
   Widget _buildGuestCard(BuildContext context) {
@@ -247,7 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   // Title
                   Text(
-                    'You are using the app as a guest',
+                    'Anda menggunakan aplikasi sebagai tamu',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -263,7 +259,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'Login to save your assessment data securely and access full features across all your devices.',
+                      'Masuk untuk menyimpan data pemeriksaan Anda dengan aman dan mengakses fitur lengkap di semua perangkat Anda.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -308,7 +304,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         child: const Text(
-                          'Login / Sign Up',
+                          'Masuk / Daftar',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -387,7 +383,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               // Name
               Text(
-                _userName ?? 'User',
+                _userName ?? 'Pengguna',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 22,
@@ -503,7 +499,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Your screening data will not be saved permanently while using guest mode.',
+              'Data skrining Anda tidak akan disimpan secara permanen saat menggunakan mode tamu.',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,

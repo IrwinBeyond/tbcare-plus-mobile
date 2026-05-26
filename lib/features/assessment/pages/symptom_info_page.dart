@@ -43,7 +43,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Your Symptom Insights',
+                                'Wawasan Gejala Anda',
                                 style: TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w900,
@@ -53,7 +53,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                               ),
                               SizedBox(height: 8),
                               Text(
-                                'Understanding your current condition and what it means for your health.',
+                                'Memahami kondisi Anda saat ini dan apa artinya bagi kesehatan Anda.',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -75,7 +75,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
-                            'Reported Symptoms',
+                            'Gejala yang Dilaporkan',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -87,26 +87,26 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
 
                         _buildSymptomCard(
                           Icons.show_chart_rounded,
-                          'Persistent cough (2-3 weeks)',
-                          'A long-lasting cough is the main symptom of pulmonary tuberculosis and may spread bacteria through the air.',
+                          'Batuk terus-menerus (2-3 minggu)',
+                          'Batuk yang berlangsung lama adalah gejala utama tuberkulosis paru dan dapat menyebarkan bakteri melalui udara.',
                         ),
                         const SizedBox(height: 12),
                         _buildSymptomCard(
                           Icons.monitor_weight_outlined,
-                          'Unexplained weight loss',
-                          'Weight loss can occur due to chronic infection affecting the body\'s metabolism.',
+                          'Penurunan berat badan tanpa sebab',
+                          'Penurunan berat badan dapat terjadi karena infeksi kronis yang memengaruhi metabolisme tubuh.',
                         ),
                         const SizedBox(height: 12),
                         _buildSymptomCard(
                           Icons.battery_alert_outlined,
-                          'Continuous fatigue',
-                          'Fatigue indicates that the body is fighting an infection and losing energy over time.',
+                          'Kelelahan terus-menerus',
+                          'Kelelahan menunjukkan bahwa tubuh sedang melawan infeksi dan kehilangan energi seiring waktu.',
                         ),
                         const SizedBox(height: 12),
                         _buildSymptomCard(
                           Icons.thermostat_outlined,
-                          'Prolonged fever or night sweats',
-                          'These are common immune responses to tuberculosis infection, especially prevalent during the night.',
+                          'Demam berkepanjangan atau keringat malam',
+                          'Ini adalah respons imun umum terhadap infeksi tuberkulosis, terutama sering terjadi pada malam hari.',
                         ),
 
                         const SizedBox(height: 28),
@@ -125,7 +125,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Text(
-                            'Tuberculosis is an airborne infectious disease caused by Mycobacterium tuberculosis.',
+                            'Tuberkulosis adalah penyakit menular melalui udara yang disebabkan oleh Mycobacterium tuberculosis.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -203,7 +203,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                       ),
                       const SizedBox(width: 6),
                       const Text(
-                        'HIGH RISK LEVEL',
+                        'TINGKAT RISIKO TINGGI',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -216,7 +216,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Based on your answers, you show signs strongly related to TBC symptoms.',
+                  'Berdasarkan jawaban Anda, Anda menunjukkan tanda-tanda yang sangat terkait dengan gejala TBC.',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -317,7 +317,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                   Icon(Icons.medical_services_outlined, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
                   const Text(
-                    'Why these symptoms matter',
+                    'Mengapa gejala ini penting',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -328,7 +328,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
               ),
               const SizedBox(height: 10),
               const Text(
-                'These symptoms are commonly associated with early-stage tuberculosis and are used for initial clinical screening before laboratory confirmation.',
+                'Gejala ini umumnya terkait dengan tuberkulosis tahap awal dan digunakan untuk skrining klinis awal sebelum konfirmasi laboratorium.',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -361,7 +361,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
       child: Column(
         children: [
           const Text(
-            'It is recommended to continue with a full assessment for a more accurate evaluation.',
+            'Disarankan untuk melanjutkan dengan pemeriksaan lengkap untuk evaluasi yang lebih akurat.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -390,7 +390,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                 ),
               ),
               child: const Text(
-                'Continue Full Assessment',
+                'Lanjutkan Pemeriksaan Lengkap',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -418,7 +418,7 @@ class _SymptomInfoPageState extends State<SymptomInfoPage> {
                 ),
               ),
               child: const Text(
-                'Back to Home',
+                'Kembali ke Beranda',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

@@ -134,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 32),
                       const Text(
-                        'Welcome Back',
+                        'Selamat Datang Kembali',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Login to your account',
+                        'Masuk ke akun Anda',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -199,12 +199,12 @@ class _LoginPageState extends State<LoginPage> {
                                         const SizedBox(height: 20),
                                       ],
 
-                                      _buildLabel('Email Address'),
+                                      _buildLabel('Alamat Email'),
                                       const SizedBox(height: 8),
                                       _buildEmailField(),
                                       const SizedBox(height: 24),
 
-                                      _buildLabel('Password'),
+                                      _buildLabel('Kata Sandi'),
                                       const SizedBox(height: 8),
                                       _buildPasswordField(),
                                       const SizedBox(height: 32),
@@ -238,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   children: [
-                                                    Text('Login',
+                                                    Text('Masuk',
                                                         style: AppTextStyles
                                                             .buttonPrimary),
                                                     SizedBox(width: 8),
@@ -259,7 +259,7 @@ class _LoginPageState extends State<LoginPage> {
 
                           // Footer
                           const Text(
-                            "Don't have an account?",
+                            'Belum punya akun?',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -282,7 +282,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               child: const Text(
-                                'Create Account',
+                                'Buat Akun',
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
@@ -392,7 +392,7 @@ class _LoginPageState extends State<LoginPage> {
           return null;
         },
         decoration: _inputDecoration(
-          hint: 'Enter your email',
+          hint: 'Masukkan email Anda',
           icon: Icons.mail_outline,
         ),
       ),
@@ -412,7 +412,7 @@ class _LoginPageState extends State<LoginPage> {
           return null;
         },
         decoration: _inputDecoration(
-          hint: 'Enter your password',
+          hint: 'Masukkan kata sandi Anda',
           icon: Icons.lock_outline,
           suffixIcon: IconButton(
             icon: Icon(

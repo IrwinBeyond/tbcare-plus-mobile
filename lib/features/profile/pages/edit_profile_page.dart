@@ -7,7 +7,7 @@ class EditProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Edit Profile Page'),
+        child: Text('Halaman Edit Profil'),
       ),
     );
   }

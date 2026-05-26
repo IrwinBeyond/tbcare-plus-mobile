@@ -61,6 +61,7 @@ class _ResultPageState extends State<ResultPage> {
           _currentRisk = raw['riskLevel'] as RiskLevel? ?? RiskLevel.low;
           _percentage = (raw['percentage'] as int?) ?? _percentage;
           _isGuest = (raw['isGuest'] as bool?) ?? true;
+          _assessmentData = raw['assessmentData'] as Map<String, dynamic>?;
         }
       } else {
         // Fallback: load from local storage (guest quick check)
@@ -96,38 +97,46 @@ class _ResultPageState extends State<ResultPage> {
   }
 
   Map<String, dynamic> _getRiskData() {
+    // Prefer DB-fetched values from assessmentData, fallback to sensible defaults
+    final dbTitle = _assessmentData?['riskTitle'] as String?;
+    final dbDescription = _assessmentData?['description'] as String?;
+
+    String title;
+    String subtitle;
+    String description;
+    Color color;
+    IconData icon;
+
     switch (_currentRisk) {
       case RiskLevel.low:
-        return {
-          'percentage': _percentage,
-          'title': 'Risiko Rendah',
-          'subtitle': 'Anda menunjukkan indikasi rendah TBC',
-          'description': 'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.',
-          'color': AppColors.primary,
-          'icon': Icons.check_circle_outline,
-          'auraColor': AppColors.primary.withOpacity(0.1),
-        };
+        title = dbTitle ?? 'Low Risk';
+        subtitle = 'Anda menunjukkan indikasi rendah TBC';
+        description = dbDescription ?? 'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.';
+        color = AppColors.primary;
+        icon = Icons.check_circle_outline;
       case RiskLevel.medium:
-        return {
-          'percentage': _percentage,
-          'title': 'Risiko Sedang',
-          'subtitle': 'Beberapa gejala memerlukan perhatian',
-          'description': 'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.',
-          'color': AppColors.warning,
-          'icon': Icons.info_outline,
-          'auraColor': AppColors.warning.withOpacity(0.1),
-        };
+        title = dbTitle ?? 'Medium Risk';
+        subtitle = 'Beberapa gejala memerlukan perhatian';
+        description = dbDescription ?? 'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.';
+        color = AppColors.warning;
+        icon = Icons.info_outline;
       case RiskLevel.high:
-        return {
-          'percentage': _percentage,
-          'title': 'Risiko Tinggi',
-          'subtitle': 'Indikasi kuat gejala TBC',
-          'description': 'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.',
-          'color': AppColors.destructive,
-          'icon': Icons.report_problem_outlined,
-          'auraColor': AppColors.destructive.withOpacity(0.1),
-        };
+        title = dbTitle ?? 'High Risk';
+        subtitle = 'Indikasi kuat gejala TBC';
+        description = dbDescription ?? 'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.';
+        color = AppColors.destructive;
+        icon = Icons.report_problem_outlined;
     }
+
+    return {
+      'percentage': _percentage,
+      'title': title,
+      'subtitle': subtitle,
+      'description': description,
+      'color': color,
+      'icon': icon,
+      'auraColor': color.withOpacity(0.1),
+    };
   }
 
   @override
@@ -152,50 +161,90 @@ class _ResultPageState extends State<ResultPage> {
       body: Stack(
         children: [
           _buildScatteredAuras(screenWidth, screenHeight, auraColor),
-          SafeArea(
-            child: Column(
-              children: [
-                HomeHeader(isGuest: _isGuest, userName: _userName),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        _isFullAssessment ? 'Hasil Pemeriksaan Lengkap' : 'Hasil Skrining',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.foreground,
-                          letterSpacing: -0.5,
+          if (_isFullAssessment)
+            // Full assessment: needs Expanded+ListView, so use a bounded Column
+            SafeArea(
+              child: Column(
+                children: [
+                  HomeHeader(isGuest: _isGuest, userName: _userName),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Hasil Pemeriksaan Lengkap',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.foreground,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isFullAssessment
-                            ? 'Analisis risiko TBC menyeluruh Anda di semua kategori.'
-                            : 'Berdasarkan jawaban Anda, berikut adalah penilaian risiko Anda.',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.mutedForeground,
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Analisis risiko TBC menyeluruh Anda di semua kategori.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.mutedForeground,
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: _buildFullResultList(),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Quick check: card hugs its content, page scrolls if needed
+            SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    HomeHeader(isGuest: _isGuest, userName: _userName),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Hasil Skrining',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.foreground,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Berdasarkan jawaban Anda, berikut adalah penilaian risiko Anda.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.mutedForeground,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: _buildResultCard(_getRiskData()),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    child: _isFullAssessment
-                        ? _buildFullResultList()
-                        : _buildResultCard(_getRiskData()),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
       bottomNavigationBar: _isGuest
@@ -539,16 +588,7 @@ class _ResultPageState extends State<ResultPage> {
                                 height: 1,
                               ),
                             ),
-                            Text(
-                              '${(data['title'] as String).split(' ')[0].toUpperCase()} RISIKO',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: mainColor,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 14),
                           ],
                         ),
                       ),
@@ -600,7 +640,7 @@ class _ResultPageState extends State<ResultPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 if (_currentRisk != RiskLevel.low) ...[
                   _buildButton(
                     'Lanjutkan Pemeriksaan Lengkap',
@@ -610,16 +650,25 @@ class _ResultPageState extends State<ResultPage> {
                     onPressed: () =>
                         Navigator.pushNamed(context, AppRoutes.fullAssessment),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  _buildButton(
+                    'Cari Klinik Terdekat',
+                    Colors.transparent,
+                    mainColor,
+                    false,
+                    borderColor: mainColor.withOpacity(0.2),
+                    onPressed: () {},
+                  ),
+                  const SizedBox(height: 10),
                 ],
                 _buildButton(
-                  _currentRisk == RiskLevel.low ? 'Kembali ke Beranda' : 'Cari Klinik Terdekat',
+                  'Kembali ke Beranda',
                   _currentRisk == RiskLevel.low ? Colors.white : Colors.transparent,
-                  mainColor,
+                  _currentRisk == RiskLevel.low ? mainColor : AppColors.mutedForeground,
                   false,
                   borderColor: _currentRisk == RiskLevel.low
                       ? mainColor.withOpacity(0.2)
-                      : Colors.transparent,
+                      : AppColors.muted.withOpacity(0.3),
                   onPressed: () => Navigator.pushNamedAndRemoveUntil(
                       context, AppRoutes.home, (route) => false),
                 ),

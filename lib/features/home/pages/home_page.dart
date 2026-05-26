@@ -26,6 +26,8 @@ class _HomePageState extends State<HomePage> {
   bool _isGuest = true;
   String? _userName;
   bool _loadingConfig = true;
+  Map<String, dynamic>? _storedResult;
+  bool get _hasStoredResult => _storedResult != null;
 
   int get _answeredCount => _symptomStates.values.where((v) => v).length;
 
@@ -85,15 +87,31 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadUser();
     _loadConfig();
+    _loadStoredResult();
+  }
+
+  Future<void> _loadStoredResult() async {
+    if (!_isGuest) return;
+    final saved = await GuestAssessmentService.get();
+    if (!mounted) return;
+    if (saved != null && saved['type'] == 'QUICK CHECK') {
+      setState(() => _storedResult = saved);
+    }
   }
 
   Future<void> _loadUser() async {
     final user = await StorageService.getUser();
     if (!mounted) return;
+    final wasGuest = _isGuest;
     setState(() {
       _isGuest = user == null;
       _userName = user?.fullName;
     });
+
+    // Guest→guest: try loading stored result
+    if (_isGuest && wasGuest && _storedResult == null) {
+      _loadStoredResult();
+    }
 
     if (user != null) {
       try {
@@ -142,6 +160,8 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         if (_loadingConfig)
                           _buildLoadingCard()
+                        else if (_hasStoredResult && _isGuest)
+                          _buildStoredResultCard()
                         else
                           _buildAssessmentCard(),
                       ],
@@ -382,12 +402,15 @@ class _HomePageState extends State<HomePage> {
       'percentage': pct,
       'riskCode': matchedLevel?.code ?? '',
       'riskTitle': matchedLevel?.title ?? '',
+      'description': matchedLevel?.description ?? '',
       'type': 'QUICK CHECK',
       'symptoms': selectedSymptoms,
     };
 
     try {
       await GuestAssessmentService.save(assessmentData);
+      if (!mounted) return;
+      setState(() => _storedResult = assessmentData);
     } catch (_) {}
 
     if (!mounted) return;
@@ -401,6 +424,287 @@ class _HomePageState extends State<HomePage> {
         'assessmentData': assessmentData,
       },
     );
+  }
+
+  // ─── STORED RESULT CARD ────────────────────────────────────
+  Widget _buildStoredResultCard() {
+    final result = _storedResult!;
+    final pct = (result['percentage'] as int?) ?? 0;
+    final riskCode = (result['riskCode'] as String?) ?? 'LOW';
+    final riskTitle = (result['riskTitle'] as String?) ?? 'Risiko Rendah';
+    final color = _colorForRisk(riskCode);
+    final icon = _iconForRisk(riskCode);
+    final subtitle = _subtitleForRisk(riskCode);
+    final description = _descriptionForRisk(riskCode);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Title
+              const Text(
+                'Hasil Skrining Terakhir',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.foreground,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Pill badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.15)),
+                ),
+                child: Text(
+                  'Cek Cepat',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Gauge
+              SizedBox(
+                height: 140,
+                width: 240,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    CustomPaint(
+                      size: const Size(240, 120),
+                      painter: GaugePainter(percentage: pct / 100, color: color),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$pct%',
+                            style: const TextStyle(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.foreground,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Risk icon + title
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 28),
+                  const SizedBox(width: 10),
+                  Text(
+                    riskTitle,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Description
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: color.withOpacity(0.1)),
+                ),
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.foreground,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Buttons
+              if (riskCode.toUpperCase() != 'LOW') ...[
+                _buildResultButton(
+                  'Lanjutkan Pemeriksaan Lengkap',
+                  color,
+                  Colors.white,
+                  true,
+                  onPressed: () => Navigator.pushNamed(context, AppRoutes.fullAssessment),
+                ),
+                const SizedBox(height: 12),
+              ],
+              _buildResultButton(
+                'Cari Klinik Terdekat',
+                Colors.transparent,
+                color,
+                false,
+                borderColor: color.withOpacity(0.2),
+                onPressed: () {}, // Placeholder
+              ),
+              const SizedBox(height: 12),
+              _buildResultButton(
+                'Ulangi Cek Cepat',
+                Colors.white,
+                AppColors.mutedForeground,
+                false,
+                borderColor: AppColors.muted.withOpacity(0.3),
+                onPressed: _retakeQuickCheck,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultButton(
+    String text,
+    Color bgColor,
+    Color textColor,
+    bool hasShadow, {
+    Color? borderColor,
+    VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: bgColor,
+        border: borderColor != null ? Border.all(color: borderColor) : null,
+        boxShadow: hasShadow
+            ? [
+                BoxShadow(
+                  color: bgColor.withOpacity(0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                )
+              ]
+            : null,
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed ?? () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _retakeQuickCheck() {
+    GuestAssessmentService.clear();
+    setState(() {
+      _storedResult = null;
+      if (_config != null) {
+        _symptomStates = {
+          for (final q in _config!.questions) q.symptomId: false,
+        };
+      }
+    });
+  }
+
+  Color _colorForRisk(String code) {
+    switch (code.toUpperCase()) {
+      case 'HIGH':
+        return AppColors.destructive;
+      case 'MEDIUM':
+        return AppColors.warning;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _iconForRisk(String code) {
+    switch (code.toUpperCase()) {
+      case 'HIGH':
+        return Icons.report_problem_outlined;
+      case 'MEDIUM':
+        return Icons.info_outline;
+      default:
+        return Icons.check_circle_outline;
+    }
+  }
+
+  String _subtitleForRisk(String code) {
+    switch (code.toUpperCase()) {
+      case 'HIGH':
+        return 'Indikasi kuat gejala TBC';
+      case 'MEDIUM':
+        return 'Beberapa gejala memerlukan perhatian';
+      default:
+        return 'Anda menunjukkan indikasi rendah TBC';
+    }
+  }
+
+  String _descriptionForRisk(String code) {
+    switch (code.toUpperCase()) {
+      case 'HIGH':
+        return 'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.';
+      case 'MEDIUM':
+        return 'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.';
+      default:
+        return 'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.';
+    }
   }
 
   Widget _buildScatteredAuras(double sw, double sh) {

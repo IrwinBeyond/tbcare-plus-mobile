@@ -6,6 +6,7 @@ import '../../../core/widgets/guest_bottom_nav.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/guest_assessment_service.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/models/assessment_config_models.dart';
 
@@ -20,9 +21,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
   QuickCheckConfig? _config;
   bool _loading = true;
   String? _error;
-
-  bool _isCheckingAuth = true;
-  bool _isLoggedIn = false;
+  bool _isGuest = true;
 
   // Track checked state by questionId
   final Map<int, bool> _answerStates = {};
@@ -35,22 +34,14 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _init();
   }
 
-  Future<void> _checkAuth() async {
+  Future<void> _init() async {
     final loggedIn = await StorageService.isLoggedIn();
     if (!mounted) return;
-    setState(() {
-      _isCheckingAuth = false;
-      _isLoggedIn = loggedIn;
-    });
-
-    if (!loggedIn) {
-      _showLoginRequiredDialog();
-    } else {
-      _loadConfig();
-    }
+    setState(() => _isGuest = !loggedIn);
+    _loadConfig();
   }
 
   Future<void> _loadConfig() async {
@@ -172,13 +163,24 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       };
 
       if (!mounted) return;
-      
+
+      // Save to local storage for guest users
+      if (_isGuest) {
+        try {
+          await GuestAssessmentService.save({
+            'type': 'FULL ASSESSMENT',
+            'results': results,
+            'savedAt': DateTime.now().toIso8601String(),
+          });
+        } catch (_) {}
+      }
+
       Navigator.pushNamed(
         context,
         AppRoutes.result,
         arguments: {
           'isFullAssessment': true,
-          'isGuest': false,
+          'isGuest': _isGuest,
           'result': result,
         },
       );
@@ -216,15 +218,11 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
 
                 // Scrollable Content
                 Expanded(
-                  child: _isCheckingAuth
+                  child: _loading
                       ? const Center(child: CircularProgressIndicator())
-                      : !_isLoggedIn
-                          ? _buildLoginPromptContent()
-                          : _loading
-                              ? const Center(child: CircularProgressIndicator())
-                              : _error != null
-                                  ? _buildErrorContent()
-                                  : _buildAssessmentContent(),
+                      : _error != null
+                          ? _buildErrorContent()
+                          : _buildAssessmentContent(),
                 ),
               ],
             ),
@@ -238,37 +236,21 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             ),
         ],
       ),
-      bottomNavigationBar: const GuestBottomNav(currentIndex: -1),
+      bottomNavigationBar: _isGuest
+          ? const GuestBottomNav(currentIndex: -1)
+          : AppBottomNav(
+              currentIndex: -1,
+              onTap: (i) {
+                final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
+                if (i < routes.length) {
+                  Navigator.pushNamedAndRemoveUntil(context, routes[i], (route) => false);
+                }
+              },
+            ),
     );
   }
 
-  Widget _buildLoginPromptContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.lock_outline_rounded, size: 64, color: AppColors.mutedForeground),
-          const SizedBox(height: 16),
-          const Text(
-            'Autentikasi Diperlukan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.foreground),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Silakan masuk untuk memulai Pemeriksaan Lengkap.',
-            style: TextStyle(color: AppColors.mutedForeground),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Pergi ke Login', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ─── ERROR CONTENT ───────────────────────────────────────
   Widget _buildErrorContent() {
     return Center(
       child: Padding(
@@ -982,120 +964,6 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
     );
   }
 
-  void _showLoginRequiredDialog() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, anim1, anim2) => const SizedBox(),
-      transitionBuilder: (context, anim1, anim2, child) {
-        return Transform.scale(
-          scale: anim1.value,
-          child: Opacity(
-            opacity: anim1.value,
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 32),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 24),
-                                ),
-                                const SizedBox(width: 16),
-                                const Expanded(
-                                  child: Text(
-                                    'Login Diperlukan',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.foreground,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Untuk melakukan Pemeriksaan Kesehatan Lengkap, Anda harus masuk log agar riwayat kesehatan dapat tersimpan dengan aman.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.foreground,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context); // close dialog
-                                      Navigator.pushReplacementNamed(context, AppRoutes.login);
-                                    },
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'Masuk Sekarang',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 IconData getSymptomIcon(String code) {

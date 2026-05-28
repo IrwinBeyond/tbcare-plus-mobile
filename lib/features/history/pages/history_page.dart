@@ -106,7 +106,7 @@ class _HistoryPageState extends State<HistoryPage> {
           SafeArea(
             child: Column(
               children: [
-                HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+                HomeHeader(isGuest: _isGuest, userName: _userName ?? StorageService.cachedUser?.fullName, profilePicture: _profilePicture ?? StorageService.cachedUser?.profilePicture),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),

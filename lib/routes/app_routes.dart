@@ -4,7 +4,6 @@ import '../features/auth/pages/login_page.dart';
 import '../features/auth/pages/register_page.dart';
 import '../features/home/pages/home_page.dart';
 import '../features/assessment/pages/full_assessment_page.dart';
-// import '../features/assessment/pages/symptom_info_page.dart';
 import '../features/result/pages/result_page.dart';
 import '../features/history/pages/history_page.dart';
 import '../features/history/pages/history_detail_page.dart';
@@ -22,7 +21,6 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/home';
   static const String fullAssessment = '/full-assessment';
-  // static const String symptomInfo = '/symptom-info';
   static const String result = '/result';
   static const String history = '/history';
   static const String historyDetail = '/history-detail';
@@ -37,7 +35,6 @@ class AppRoutes {
     register: (context) => const RegisterPage(),
     home: (context) => const HomePage(),
     fullAssessment: (context) => const FullAssessmentPage(),
-    // symptomInfo: (context) => const SymptomInfoPage(),
     result: (context) => const ResultPage(),
     history: (context) => const HistoryPage(),
     historyDetail: (context) {

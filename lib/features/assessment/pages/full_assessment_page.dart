@@ -178,26 +178,48 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
     }
     setState(() => _submitting = true);
     try {
-      final grouped = _questionsByTbType;
-      final results = <Map<String, dynamic>>[];
-      grouped.forEach((tbTypeId, questions) {
-        double sum = 0.0;
-        final symptomDetails = <Map<String, dynamic>>[];
-        for (final q in questions) {
-          final isSelected = _answerStates[q.questionId] ?? false;
-          final cfValue = isSelected ? 1.0 : 0.0;
-          if (isSelected) sum += q.weight;
-          symptomDetails.add({
+      // Compute per-TB-type sums using applicableTbTypes for cross-type contribution
+      final Map<int, double> sumByTbType = {};
+      final Map<int, String> tbTypeNames = {};
+      final Map<int, List<Map<String, dynamic>>> symptomsByTbType = {};
+
+      for (final q in _config!.questions) {
+        final isSelected = _answerStates[q.questionId] ?? false;
+        final cfValue = isSelected ? 1.0 : 0.0;
+
+        // Collect TB type names from applicableTbTypes and primary
+        for (final tw in q.applicableTbTypes) {
+          tbTypeNames[tw.tbTypeId] = tw.tbTypeName;
+        }
+        tbTypeNames[q.tbTypeId] = q.tbTypeName ?? 'Kategori ${q.tbTypeId}';
+
+        if (!isSelected) continue;
+
+        final targets = q.applicableTbTypes.isNotEmpty
+            ? q.applicableTbTypes
+            : [TbTypeWeight(tbTypeId: q.tbTypeId, tbTypeName: q.tbTypeName ?? '', weight: q.weight)];
+
+        for (final tw in targets) {
+          sumByTbType[tw.tbTypeId] = (sumByTbType[tw.tbTypeId] ?? 0) + tw.weight;
+          symptomsByTbType.putIfAbsent(tw.tbTypeId, () => []).add({
             'symptomName': q.symptomName,
             'cfValue': cfValue,
+            'originTbTypeId': q.tbTypeId,
           });
         }
+      }
+
+      final results = <Map<String, dynamic>>[];
+      for (final entry in sumByTbType.entries) {
+        final tbTypeId = entry.key;
+        final sum = entry.value;
         final combinedCF = 1.0 - exp(-_config!.saturationK * sum);
         final percentage = (combinedCF * 100).round().toDouble();
         final matchedLevel = _config!.findRiskLevel(percentage, tbTypeId);
         results.add({
-          'tbTypeName': questions.first.tbTypeName ?? 'Kategori $tbTypeId',
-          'tbTypeCode': questions.first.symptomCode.split('_').first,
+          'tbTypeId': tbTypeId,
+          'tbTypeName': tbTypeNames[tbTypeId] ?? 'Kategori $tbTypeId',
+          'tbTypeCode': 'TB$tbTypeId',
           'totalScore': percentage,
           'riskLevel': matchedLevel != null
               ? {
@@ -212,9 +234,9 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   'description': '',
                   'recommendation': '',
                 },
-          'symptomDetails': symptomDetails,
+          'symptomDetails': symptomsByTbType[tbTypeId] ?? [],
         });
-      });
+      }
       final result = {'results': results};
       if (!mounted) return;
       if (!_isLoggedIn) {
@@ -300,6 +322,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
               children: [
                 _buildHeader(context),
                 if (!_loading && _error == null) _buildProgressBar(),
+                if (!_loading && _error == null) _buildCurrentTbTypeLabel(),
                 Expanded(
                   child: _isCheckingAuth
                       ? const Center(child: CircularProgressIndicator())
@@ -389,6 +412,51 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       }),
     ),
   );
+
+  Widget _buildCurrentTbTypeLabel() {
+    final tbTypeId = _currentTbTypeId();
+    final name = _categoryName(tbTypeId);
+    final icon = _iconForTbType(tbTypeId);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              '${_currentStep + 1}/$_totalSteps',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(width: 1, height: 14, color: AppColors.primary.withOpacity(0.2)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildStepContent() {
     final tbTypeId = _currentTbTypeId();

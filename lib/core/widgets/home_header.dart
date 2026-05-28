@@ -96,7 +96,12 @@ class HomeHeader extends StatelessWidget {
               onTap: () {
                 if (ModalRoute.of(context)?.settings.name !=
                     AppRoutes.profile) {
-                  Navigator.pushNamed(context, AppRoutes.profile);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.profile,
+                    (route) => false,
+                    arguments: {'isGuest': isGuest},
+                  );
                 }
               },
               child: Column(

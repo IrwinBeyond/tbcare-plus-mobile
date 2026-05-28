@@ -51,6 +51,7 @@ class _ResultPageState extends State<ResultPage> {
         if (_isFullAssessment) {
           _fullResultData = raw['result'] as Map<String, dynamic>?;
           _isGuest = (raw['isGuest'] as bool?) ?? false;
+          StorageService.lastAssessmentResult = _fullResultData;
         } else {
           _currentRisk = raw['riskLevel'] as RiskLevel? ?? RiskLevel.low;
           _percentage = (raw['percentage'] as int?) ?? _percentage;
@@ -91,7 +92,7 @@ class _ResultPageState extends State<ResultPage> {
 
   Future<void> _openSymptomInsight(Color mainColor, IconData riskIcon) async {
     Map<String, dynamic>? detail;
-    if (_isGuest && _assessmentData != null) {
+    if (_assessmentData != null) {
       try {
         final config = await AssessmentApiService.fetchQuickCheckConfig();
         final symptoms =
@@ -106,12 +107,14 @@ class _ResultPageState extends State<ResultPage> {
             'symptomName': q.symptomName,
             'symptomDescription': q.symptomDescription ?? '',
             'cfValue': 1.0,
+            'tbTypeId': q.tbTypeId,
           });
         }
         if (byTbType.isNotEmpty) {
           final items = <Map<String, dynamic>>[];
           for (final entry in byTbType.entries) {
             items.add({
+              'primaryTbTypeId': entry.key,
               'primaryTbTypeName':
                   config.questions
                       .firstWhere(
@@ -257,7 +260,7 @@ class _ResultPageState extends State<ResultPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+            HomeHeader(isGuest: _isGuest, userName: _userName ?? StorageService.cachedUser?.fullName, profilePicture: _profilePicture ?? StorageService.cachedUser?.profilePicture),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
@@ -296,14 +299,11 @@ class _ResultPageState extends State<ResultPage> {
   }
 
   Widget _buildFullResultView() {
-    final color = _fullResultData!['results'] is List
-        ? (_getFullRiskColor())
-        : (_getRiskData()['auraColor'] as Color);
     return SafeArea(
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+            child: HomeHeader(isGuest: _isGuest, userName: _userName ?? StorageService.cachedUser?.fullName, profilePicture: _profilePicture ?? StorageService.cachedUser?.profilePicture),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -335,9 +335,21 @@ class _ResultPageState extends State<ResultPage> {
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
-              final result =
-                  (_fullResultData!['results'] as List)[index]
-                      as Map<String, dynamic>;
+              final sortedResults = List<Map<String, dynamic>>.from(
+                  (_fullResultData!['results'] as List).cast<Map<String, dynamic>>());
+              sortedResults.sort((a, b) {
+                String? codeOf(Map<String, dynamic> m) {
+                  final rl = m['riskLevel'] as Map<String, dynamic>?;
+                  return rl?['code'] as String?;
+                }
+                final ra = _riskRank(codeOf(a));
+                final rb = _riskRank(codeOf(b));
+                if (ra != rb) return rb.compareTo(ra);
+                final sa = (a['totalScore'] as num?)?.toDouble() ?? 0;
+                final sb = (b['totalScore'] as num?)?.toDouble() ?? 0;
+                return sb.compareTo(sa);
+              });
+              final result = sortedResults[index];
               return Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 child: _buildCategoryResultCard(result),
@@ -353,11 +365,7 @@ class _ResultPageState extends State<ResultPage> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.home,
-                        (route) => false,
-                      ),
+                      onPressed: _goHome,
                       icon: const Icon(
                         Icons.arrow_back_rounded,
                         color: Colors.white,
@@ -391,18 +399,31 @@ class _ResultPageState extends State<ResultPage> {
     );
   }
 
+  void _goHome() {
+    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.home));
+  }
+
+  int _riskRank(String? code) {
+    final c = (code ?? '').toUpperCase();
+    if (c.contains('HIGH')) return 3;
+    if (c.contains('MEDIUM') || c.contains('MODERATE')) return 2;
+    return 1;
+  }
+
   Color _getFullRiskColor() {
     final results = _fullResultData!['results'] as List;
     for (final r in results) {
       if (r is Map) {
         final rl = r['riskLevel'] as Map<String, dynamic>?;
-        if (rl?['code'] == 'HIGH') return AppColors.destructive;
+        final code = (rl?['code'] ?? '').toString().toUpperCase();
+        if (code.contains('HIGH')) return AppColors.destructive;
       }
     }
     for (final r in results) {
       if (r is Map) {
         final rl = r['riskLevel'] as Map<String, dynamic>?;
-        if (rl?['code'] == 'MEDIUM') return AppColors.warning;
+        final code = (rl?['code'] ?? '').toString().toUpperCase();
+        if (code.contains('MEDIUM') || code.contains('MODERATE')) return AppColors.warning;
       }
     }
     return AppColors.primary;
@@ -413,7 +434,7 @@ class _ResultPageState extends State<ResultPage> {
     final score = (result['totalScore'] as num?)?.toInt() ?? 0;
     final riskLevel = result['riskLevel'] as Map<String, dynamic>?;
     final riskTitle = riskLevel?['title'] ?? 'Risiko Rendah';
-    final riskCode = riskLevel?['code'] ?? 'LOW';
+    final riskCode = (riskLevel?['code'] ?? 'LOW').toString().toUpperCase();
     Color color;
     IconData riskIcon;
     if (riskCode.contains('HIGH')) {
@@ -490,55 +511,82 @@ class _ResultPageState extends State<ResultPage> {
           ),
           if (selectedSymptoms.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text(
-              'Gejala dipilih (${selectedSymptoms.length})',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.mutedForeground.withOpacity(0.9),
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...selectedSymptoms.map(
-              (s) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.08)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.check_rounded, color: color, size: 16),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        s['symptomName'] ?? '-',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.foreground,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildSymptomGroups(selectedSymptoms, color, result['tbTypeId'] as int? ?? 0),
           ],
         ],
       ),
     );
   }
+
+  Widget _buildSymptomGroups(List<Map<String, dynamic>> symptoms, Color color, int currentTbTypeId) {
+    final umum = symptoms.where((s) => (s['originTbTypeId'] as int?) == 1).toList();
+    final khusus = symptoms.where((s) => (s['originTbTypeId'] as int?) != 1).toList();
+    final isTbType1 = currentTbTypeId == 1;
+
+    if (isTbType1) {
+      // No separation for tb_type=1, no title
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Gejala dipilih (${symptoms.length})',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9)),
+          ),
+          const SizedBox(height: 10),
+          ...symptoms.map((s) => _buildSymptomChip(s, color)),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (umum.isNotEmpty) ...[
+          Text(
+            'Gejala Umum (${umum.length})',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9)),
+          ),
+          const SizedBox(height: 10),
+          ...umum.map((s) => _buildSymptomChip(s, color)),
+          if (khusus.isNotEmpty) const SizedBox(height: 16),
+        ],
+        if (khusus.isNotEmpty) ...[
+          Text(
+            'Gejala Khusus (${khusus.length})',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9)),
+          ),
+          const SizedBox(height: 10),
+          ...khusus.map((s) => _buildSymptomChip(s, color)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSymptomChip(Map<String, dynamic> s, Color color) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.7),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: color.withOpacity(0.08)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+          child: Icon(Icons.check_rounded, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            s['symptomName'] ?? '-',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildResultCard(Map<String, dynamic> data) {
     Color mainColor = data['color'];
@@ -674,11 +722,7 @@ class _ResultPageState extends State<ResultPage> {
               borderColor: _currentRisk == RiskLevel.low
                   ? mainColor.withOpacity(0.2)
                   : AppColors.muted.withOpacity(0.3),
-              onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.home,
-                (route) => false,
-              ),
+              onPressed: _goHome,
             ),
           ],
         ),

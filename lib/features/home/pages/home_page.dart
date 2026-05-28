@@ -197,7 +197,13 @@ class _HomePageState extends State<HomePage> {
           SafeArea(
             child: Column(
               children: [
-                HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+                HomeHeader(
+                  isGuest: _isGuest,
+                  userName: _userName ?? StorageService.cachedUser?.fullName,
+                  profilePicture:
+                      _profilePicture ??
+                      StorageService.cachedUser?.profilePicture,
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -470,7 +476,7 @@ class _HomePageState extends State<HomePage> {
       'riskLevel': risk.name,
       'combinedCF': cf,
       'percentage': pct,
-      'riskCode': matchedLevel?.code ?? '',
+      'riskCode': matchedLevel?.code ?? 'LOW',
       'riskTitle': matchedLevel?.title ?? '',
       'description': matchedLevel?.description ?? '',
       'type': 'QUICK CHECK',
@@ -732,80 +738,148 @@ class _HomePageState extends State<HomePage> {
     String? sessionKey,
   }) async {
     Map<String, dynamic>? detail;
-    if (_isGuest && _storedResult != null) {
-      final result = _storedResult!;
-      final symptoms = result['symptoms'] as Map<String, dynamic>? ?? {};
-
-      // Load the correct config: full assessment or quick check
-      final config = isFullAssessment
-          ? await AssessmentApiService.fetchFullAssessmentConfig()
-          : _config;
-
-      if (config != null) {
-        final Map<int, List<Map<String, dynamic>>> byTbType = {};
-        for (final q in config.questions) {
-          // Full assessment uses questionId, quick check uses symptomId
-          final key = isFullAssessment
-              ? q.questionId.toString()
-              : q.symptomId.toString();
-          final selected = symptoms[key] == true;
-          if (!selected) continue;
-          byTbType.putIfAbsent(q.tbTypeId, () => []).add({
-            'symptomName': q.symptomName,
-            'symptomDescription': q.symptomDescription ?? '',
-            'cfValue': 1.0,
+    // Use stored result (guest) or last assessment result from cache
+    final stored = _storedResult ?? StorageService.lastAssessmentResult;
+    if (stored != null) {
+      // Handle full assessment result format (from StorageService.lastAssessmentResult)
+      if (stored['results'] is List && stored['symptoms'] == null) {
+        final results = stored['results'] as List;
+        final items = <Map<String, dynamic>>[];
+        for (final r in results) {
+          if (r is! Map) continue;
+          final symptomDetails = (r['symptomDetails'] as List<dynamic>?) ?? [];
+          final selectedSymptoms = symptomDetails
+              .where(
+                (s) => s is Map && (s['cfValue'] as num?)?.toDouble() == 1.0,
+              )
+              .map(
+                (s) => {
+                  'symptomName': (s as Map)['symptomName'] ?? '-',
+                  'symptomDescription': '',
+                  'cfValue': 1.0,
+                  'tbTypeId': (s['originTbTypeId'] as int?) ?? 0,
+                },
+              )
+              .toList();
+          final riskLevel = r['riskLevel'] as Map<String, dynamic>?;
+          items.add({
+            'primaryTbTypeId': r['tbTypeId'] ?? 0,
+            'primaryTbTypeName': r['tbTypeName'] ?? 'Unknown',
+            'totalScore': (r['totalScore'] as num?)?.toDouble() ?? 0,
+            'riskLevelTitle': riskLevel?['title'] ?? 'Risiko Rendah',
+            'riskLevelCode': riskLevel?['code'] ?? 'LOW',
+            'selectedSymptoms': selectedSymptoms,
+            'scoreBreakdown': {
+              'results': [
+                {
+                  'riskLevel': {
+                    'recommendation': riskLevel?['recommendation'] ?? '',
+                  },
+                },
+              ],
+            },
           });
         }
+        detail = {
+          'items': items,
+          'createdAt': DateTime.now().toIso8601String(),
+          'assessmentTypeName': isFullAssessment
+              ? 'Full Assessment'
+              : 'Quick Assessment',
+        };
+      } else {
+        // Handle stored result format (guest quick check / full assessment)
+        final result = stored;
+        final symptoms = result['symptoms'] as Map<String, dynamic>? ?? {};
 
-        if (byTbType.isNotEmpty) {
-          final fullResults = result['fullResults'] as List<dynamic>?;
-          final items = <Map<String, dynamic>>[];
-          for (final entry in byTbType.entries) {
-            final firstQ = config.questions.firstWhere(
-              (q) => q.tbTypeId == entry.key,
-              orElse: () => config.questions.first,
-            );
-            // Use per-TB-type score if available (full assessment), otherwise overall score
-            double tbScore = pct.toDouble();
-            String tbRiskTitle = riskTitle;
-            String tbRiskCode = riskCode;
-            String tbRec = result['description'] ?? '';
-            if (fullResults != null) {
-              for (final fr in fullResults) {
-                if (fr is Map && fr['tbTypeName'] == firstQ.tbTypeName) {
-                  tbScore = (fr['totalScore'] as num?)?.toDouble() ?? tbScore;
-                  final frRisk = fr['riskLevel'] as Map<String, dynamic>?;
-                  tbRiskTitle = frRisk?['title'] ?? tbRiskTitle;
-                  tbRiskCode = frRisk?['code'] ?? tbRiskCode;
-                  tbRec = frRisk?['recommendation'] ?? tbRec;
-                  break;
+        final config = isFullAssessment
+            ? await AssessmentApiService.fetchFullAssessmentConfig()
+            : _config;
+
+        if (config != null) {
+          final Map<int, List<Map<String, dynamic>>> byTbType = {};
+          final Map<int, String> tbTypeNames = {};
+          // Collect all TB type names from applicableTbTypes
+          for (final q in config.questions) {
+            for (final tw in q.applicableTbTypes) {
+              tbTypeNames[tw.tbTypeId] = tw.tbTypeName;
+            }
+            tbTypeNames[q.tbTypeId] = q.tbTypeName ?? 'Kategori ${q.tbTypeId}';
+          }
+          for (final q in config.questions) {
+            final key = isFullAssessment
+                ? q.questionId.toString()
+                : q.symptomId.toString();
+            final selected = symptoms[key] == true;
+            if (!selected) continue;
+            final targets = q.applicableTbTypes.isNotEmpty
+                ? q.applicableTbTypes
+                : [
+                    TbTypeWeight(
+                      tbTypeId: q.tbTypeId,
+                      tbTypeName: q.tbTypeName ?? '',
+                      weight: q.weight,
+                    ),
+                  ];
+            for (final tw in targets) {
+              byTbType.putIfAbsent(tw.tbTypeId, () => []).add({
+                'symptomName': q.symptomName,
+                'symptomDescription': q.symptomDescription ?? '',
+                'cfValue': 1.0,
+                'tbTypeId': q.tbTypeId,
+              });
+            }
+          }
+
+          if (byTbType.isNotEmpty) {
+            final fullResults = result['fullResults'] as List<dynamic>?;
+            final items = <Map<String, dynamic>>[];
+            for (final entry in byTbType.entries) {
+              final tbTypeName =
+                  tbTypeNames[entry.key] ?? 'Kategori ${entry.key}';
+              // Use per-TB-type score if available (full assessment), otherwise overall score
+              double tbScore = pct.toDouble();
+              String tbRiskTitle = riskTitle;
+              String tbRiskCode = riskCode;
+              String tbRec = result['description'] ?? '';
+              if (fullResults != null) {
+                for (final fr in fullResults) {
+                  if (fr is Map && fr['tbTypeName'] == tbTypeName) {
+                    tbScore = (fr['totalScore'] as num?)?.toDouble() ?? tbScore;
+                    final frRisk = fr['riskLevel'] as Map<String, dynamic>?;
+                    tbRiskTitle = frRisk?['title'] ?? tbRiskTitle;
+                    tbRiskCode = frRisk?['code'] ?? tbRiskCode;
+                    tbRec = frRisk?['recommendation'] ?? tbRec;
+                    break;
+                  }
                 }
               }
+              items.add({
+                'primaryTbTypeId': entry.key,
+                'primaryTbTypeName': tbTypeName,
+                'totalScore': tbScore,
+                'riskLevelTitle': tbRiskTitle,
+                'riskLevelCode': tbRiskCode,
+                'selectedSymptoms': entry.value,
+                'scoreBreakdown': {
+                  'results': [
+                    {
+                      'riskLevel': {'recommendation': tbRec},
+                    },
+                  ],
+                },
+              });
             }
-            items.add({
-              'primaryTbTypeName': firstQ.tbTypeName ?? 'Unknown',
-              'totalScore': tbScore,
-              'riskLevelTitle': tbRiskTitle,
-              'riskLevelCode': tbRiskCode,
-              'selectedSymptoms': entry.value,
-              'scoreBreakdown': {
-                'results': [
-                  {
-                    'riskLevel': {'recommendation': tbRec},
-                  },
-                ],
-              },
-            });
+            detail = {
+              'items': items,
+              'createdAt': DateTime.now().toIso8601String(),
+              'assessmentTypeName': isFullAssessment
+                  ? 'Full Assessment'
+                  : 'Quick Assessment',
+            };
           }
-          detail = {
-            'items': items,
-            'createdAt': DateTime.now().toIso8601String(),
-            'assessmentTypeName': isFullAssessment
-                ? 'Full Assessment'
-                : 'Quick Assessment',
-          };
         }
-      }
+      } // else block
     }
 
     if (!mounted) return;
@@ -1105,29 +1179,45 @@ class _HomePageState extends State<HomePage> {
 
     // Group selected symptoms by TB type using config questions
     final Map<int, List<Map<String, dynamic>>> byTbType = {};
+    final Map<int, String> tbTypeNames = {};
+    for (final q in _config!.questions) {
+      for (final tw in q.applicableTbTypes) {
+        tbTypeNames[tw.tbTypeId] = tw.tbTypeName;
+      }
+      tbTypeNames[q.tbTypeId] = q.tbTypeName ?? 'Kategori ${q.tbTypeId}';
+    }
     for (final q in _config!.questions) {
       final selected =
           (symptoms[q.symptomId.toString()] == true) ||
           (symptoms[q.symptomId] == true);
       if (!selected) continue;
-      byTbType.putIfAbsent(q.tbTypeId, () => []).add({
-        'symptomName': q.symptomName,
-        'symptomDescription': q.symptomDescription ?? '',
-        'cfValue': 1.0,
-      });
+      final targets = q.applicableTbTypes.isNotEmpty
+          ? q.applicableTbTypes
+          : [
+              TbTypeWeight(
+                tbTypeId: q.tbTypeId,
+                tbTypeName: q.tbTypeName ?? '',
+                weight: q.weight,
+              ),
+            ];
+      for (final tw in targets) {
+        byTbType.putIfAbsent(tw.tbTypeId, () => []).add({
+          'symptomName': q.symptomName,
+          'symptomDescription': q.symptomDescription ?? '',
+          'cfValue': 1.0,
+          'tbTypeId': q.tbTypeId,
+        });
+      }
     }
 
     if (byTbType.isEmpty) return null;
 
     final items = <Map<String, dynamic>>[];
     for (final entry in byTbType.entries) {
-      final firstQ = _config!.questions.firstWhere(
-        (q) => q.tbTypeId == entry.key,
-        orElse: () => _config!.questions.first,
-      );
       final pct = (result['percentage'] as int?) ?? 0;
       items.add({
-        'primaryTbTypeName': firstQ.tbTypeName ?? 'Unknown',
+        'primaryTbTypeId': entry.key,
+        'primaryTbTypeName': tbTypeNames[entry.key] ?? 'Kategori ${entry.key}',
         'totalScore': pct,
         'riskLevelTitle': result['riskTitle'] ?? 'Risiko Rendah',
         'riskLevelCode': result['riskCode'] ?? 'LOW',

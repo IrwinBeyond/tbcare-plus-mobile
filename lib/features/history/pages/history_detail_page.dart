@@ -246,37 +246,43 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                children: [
-                  Text(
-                    widget.item['percentage'],
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: color,
-                      height: 1.0,
+              SizedBox(
+                width: 100,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.item['percentage'],
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                        height: 1.0,
+                      ),
                     ),
-                  ),
-                  Text(
-                    (widget.item['tbType'] as String?)?.isNotEmpty == true
-                        ? (widget.item['tbType'] as String)
-                        : 'Tingkat Risiko',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: color.withOpacity(0.6),
+                    const SizedBox(height: 4),
+                    Text(
+                      (widget.item['tbType'] as String?)?.isNotEmpty == true
+                          ? (widget.item['tbType'] as String)
+                          : 'Tingkat Risiko',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: color.withOpacity(0.6),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(width: 32),
+              const SizedBox(width: 20),
               Container(width: 2, height: 60, color: color.withOpacity(0.1)),
-              const SizedBox(width: 32),
-              Expanded(
+              const SizedBox(width: 20),
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       widget.item['riskLevel'],
@@ -345,9 +351,12 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
             'name': m['symptomName'] ?? '-',
             'desc': m['symptomDescription'] ?? 'No description available.',
             'cfValue': m['cfValue'] ?? 0,
+            'tbTypeId': (m['tbTypeId'] is num) ? (m['tbTypeId'] as num).toInt() : 0,
           };
         })
         .toList();
+
+    final currentTbTypeId = (item['primaryTbTypeId'] as num?)?.toInt() ?? 0;
 
     final isExpanded = _tbTypeExpanded[tbTypeName] ?? true;
 
@@ -431,46 +440,64 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               ),
             ),
           ),
-          AnimatedCrossFade(
-            firstChild: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (symptoms.isNotEmpty) ...[
-                    Text(
-                      'Gejala dipilih (${symptoms.length})',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.mutedForeground.withOpacity(0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Use expansion tiles for each symptom instead of a popup
-                    ...symptoms.map(
-                      (s) => _buildSymptomItem(context, s, resolvedColor),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            secondChild: const SizedBox.shrink(),
-            crossFadeState: isExpanded
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
+          AnimatedSize(
             duration: const Duration(milliseconds: 300),
+            alignment: Alignment.topCenter,
+            child: isExpanded
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (symptoms.isNotEmpty) ...[
+                          _buildSymptomGroups(symptoms, resolvedColor, currentTbTypeId),
+                        ],
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSymptomItem(
-    BuildContext context,
-    Map<String, dynamic> symptom,
-    Color themeColor,
-  ) {
+  Widget _buildSymptomGroups(List<Map<String, dynamic>> symptoms, Color color, int currentTbTypeId) {
+    final umum = symptoms.where((s) => (s['tbTypeId'] as int?) == 1).toList();
+    final khusus = symptoms.where((s) => (s['tbTypeId'] as int?) != 1).toList();
+    final isTbType1 = currentTbTypeId == 1;
+
+    if (isTbType1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Gejala dipilih (${symptoms.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          const SizedBox(height: 10),
+          ...symptoms.map((s) => _buildSymptomChip(s, color)),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (umum.isNotEmpty) ...[
+          Text('Gejala Umum (${umum.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          const SizedBox(height: 10),
+          ...umum.map((s) => _buildSymptomChip(s, color)),
+          if (khusus.isNotEmpty) const SizedBox(height: 16),
+        ],
+        if (khusus.isNotEmpty) ...[
+          Text('Gejala Khusus (${khusus.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          const SizedBox(height: 10),
+          ...khusus.map((s) => _buildSymptomChip(s, color)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSymptomChip(Map<String, dynamic> symptom, Color themeColor) {
     final controller = ExpansionTileController();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -479,84 +506,48 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: themeColor.withOpacity(0.12)),
       ),
-      child: ExpansionTile(
-        controller: controller,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        childrenPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                themeColor.withOpacity(0.15),
-                themeColor.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.check_circle_rounded, color: themeColor, size: 24),
-        ),
-        title: Text(
-          symptom['name'],
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppColors.foreground,
-          ),
-        ),
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  symptom['desc'],
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.foreground.withOpacity(0.8),
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                controller.collapse();
-              },
-              style: TextButton.styleFrom(
-                backgroundColor: themeColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            child: ExpansionTile(
+              controller: controller,
+              tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [themeColor.withOpacity(0.15), themeColor.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: const Text(
-                'Mengerti',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.check_circle_rounded, color: themeColor, size: 24),
+          ),
+          title: Text(
+            symptom['name'],
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.foreground),
+          ),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                symptom['desc'],
+                style: TextStyle(fontSize: 14, color: AppColors.foreground.withOpacity(0.8), height: 1.6),
               ),
             ),
+          ],
+            ),
           ),
-        ],
-      ),
+        ),
     );
   }
 

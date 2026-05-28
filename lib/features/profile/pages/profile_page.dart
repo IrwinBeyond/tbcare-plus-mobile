@@ -18,6 +18,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _userName;
   String? _userEmail;
   String? _profilePicture;
+
+  String get _profilePicUrl => _profilePicture ?? StorageService.cachedUser?.profilePicture ?? '';
   bool _argumentsLoaded = false;
 
   @override
@@ -75,7 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 HomeHeader(
                   isGuest: _isGuest,
-                  userName: _userName,
+                  userName: _userName ?? StorageService.cachedUser?.fullName,
                   showProfile: false,
                 ),
                 Expanded(
@@ -311,14 +313,14 @@ class _ProfilePageState extends State<ProfilePage> {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: _profilePicture != null && _profilePicture!.isNotEmpty
+              gradient: _profilePicUrl.isNotEmpty
                   ? null
                   : const LinearGradient(
                       colors: [AppColors.primary, AppColors.secondary],
                     ),
-              image: _profilePicture != null && _profilePicture!.isNotEmpty
+              image: _profilePicUrl.isNotEmpty
                   ? DecorationImage(
-                      image: NetworkImage(_profilePicture!),
+                      image: NetworkImage(_profilePicUrl),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -334,11 +336,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            child: (_profilePicture != null && _profilePicture!.isNotEmpty)
+            child: _profilePicUrl.isNotEmpty
                 ? null
                 : Center(
                     child: Text(
-                      (_userName ?? _userEmail ?? 'U')[0].toUpperCase(),
+                      (_userName ?? _userEmail ?? StorageService.cachedUser?.fullName ?? StorageService.cachedUser?.email ?? 'U')[0].toUpperCase(),
                       style: const TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.w900,
@@ -349,7 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 24),
           Text(
-            _userName ?? 'Pengguna',
+            _userName ?? StorageService.cachedUser?.fullName ?? 'Pengguna',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 22,
@@ -359,9 +361,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 6),
-          if (_userEmail != null)
+          if ((_userEmail ?? StorageService.cachedUser?.email) != null)
             Text(
-              _userEmail!,
+              _userEmail ?? StorageService.cachedUser?.email ?? '',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

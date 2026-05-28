@@ -66,6 +66,7 @@ class QuickCheckConfig {
           sortOrder: 1,
           weight: 0.15,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.15)],
         ),
         QuickCheckQuestion(
           questionId: 2,
@@ -76,6 +77,7 @@ class QuickCheckConfig {
           sortOrder: 2,
           weight: 0.20,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.20)],
         ),
         QuickCheckQuestion(
           questionId: 3,
@@ -86,6 +88,7 @@ class QuickCheckConfig {
           sortOrder: 3,
           weight: 0.10,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
         ),
         QuickCheckQuestion(
           questionId: 4,
@@ -96,6 +99,7 @@ class QuickCheckConfig {
           sortOrder: 4,
           weight: 0.10,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
         ),
         QuickCheckQuestion(
           questionId: 5,
@@ -106,6 +110,7 @@ class QuickCheckConfig {
           sortOrder: 5,
           weight: 0.15,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.15)],
         ),
         QuickCheckQuestion(
           questionId: 6,
@@ -116,6 +121,7 @@ class QuickCheckConfig {
           sortOrder: 6,
           weight: 0.10,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
         ),
         QuickCheckQuestion(
           questionId: 7,
@@ -126,6 +132,7 @@ class QuickCheckConfig {
           sortOrder: 7,
           weight: 0.10,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
         ),
         QuickCheckQuestion(
           questionId: 8,
@@ -136,6 +143,7 @@ class QuickCheckConfig {
           sortOrder: 8,
           weight: 0.10,
           tbTypeId: 1,
+          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
         ),
       ],
       riskLevels: [
@@ -168,6 +176,32 @@ class QuickCheckConfig {
   }
 }
 
+class TbTypeWeight {
+  final int tbTypeId;
+  final String tbTypeName;
+  final double weight;
+
+  const TbTypeWeight({
+    required this.tbTypeId,
+    required this.tbTypeName,
+    required this.weight,
+  });
+
+  factory TbTypeWeight.fromJson(Map<String, dynamic> json) {
+    return TbTypeWeight(
+      tbTypeId: (json['tbTypeId'] as num).toInt(),
+      tbTypeName: json['tbTypeName'] as String? ?? '',
+      weight: (json['weight'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'tbTypeId': tbTypeId,
+    'tbTypeName': tbTypeName,
+    'weight': weight,
+  };
+}
+
 class QuickCheckQuestion {
   final int questionId;
   final int symptomId;
@@ -180,6 +214,7 @@ class QuickCheckQuestion {
   final double weight;
   final int tbTypeId;
   final String? tbTypeName;
+  final List<TbTypeWeight> applicableTbTypes;
 
   const QuickCheckQuestion({
     required this.questionId,
@@ -193,6 +228,7 @@ class QuickCheckQuestion {
     required this.weight,
     required this.tbTypeId,
     this.tbTypeName,
+    this.applicableTbTypes = const [],
   });
 
   factory QuickCheckQuestion.fromJson(Map<String, dynamic> json) {
@@ -208,6 +244,10 @@ class QuickCheckQuestion {
       weight: (json['weight'] as num?)?.toDouble() ?? 0,
       tbTypeId: (json['tbTypeId'] as num?)?.toInt() ?? 0,
       tbTypeName: json['tbTypeName'] as String?,
+      applicableTbTypes: (json['applicableTbTypes'] as List<dynamic>?)
+              ?.map((e) => TbTypeWeight.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -223,6 +263,7 @@ class QuickCheckQuestion {
     'weight': weight,
     'tbTypeId': tbTypeId,
     'tbTypeName': tbTypeName,
+    'applicableTbTypes': applicableTbTypes.map((e) => e.toJson()).toList(),
   };
 }
 

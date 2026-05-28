@@ -450,17 +450,17 @@ class _RegisterPageState extends State<RegisterPage> {
         Positioned(
           top: -50,
           right: -50,
-          child: _buildAura(150, AppColors.primary.withOpacity(0.1)),
+          child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
         ),
         Positioned(
           top: sh * 0.3,
           left: -100,
-          child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
+          child: _buildAura(80, AppColors.secondary.withOpacity(0.04)),
         ),
         Positioned(
           bottom: 100,
           right: 20,
-          child: _buildAura(100, AppColors.accent.withOpacity(0.1)),
+          child: _buildAura(60, AppColors.accent.withOpacity(0.06)),
         ),
       ],
     );
@@ -468,12 +468,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildAura(double size, Color color) {
     return Container(
-      width: size * 2,
-      height: size * 2,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size * 0.4),
         ],
       ),
     );

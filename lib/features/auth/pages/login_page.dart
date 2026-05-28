@@ -104,12 +104,12 @@ class _LoginPageState extends State<LoginPage> {
           Positioned(
             top: -50,
             right: -50,
-            child: _buildAura(150, AppColors.primary.withOpacity(0.1)),
+            child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
           ),
           Positioned(
             top: screenHeight * 0.3,
             left: -100,
-            child: _buildAura(200, AppColors.secondary.withOpacity(0.05)),
+            child: _buildAura(80, AppColors.secondary.withOpacity(0.04)),
           ),
           SafeArea(
             child: Column(
@@ -492,9 +492,9 @@ class _LoginPageState extends State<LoginPage> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color,
             blurRadius: size,
-            spreadRadius: size / 2,
+            spreadRadius: size * 0.4,
           ),
         ],
       ),

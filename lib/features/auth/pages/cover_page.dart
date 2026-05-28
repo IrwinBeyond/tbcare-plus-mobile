@@ -31,21 +31,21 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
     super.initState();
     _dragController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
     );
     _dragAnimation = CurvedAnimation(
       parent: _dragController,
-      curve: Curves.easeOutQuart,
+      curve: Curves.easeOutQuad,
     );
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 1000),
     );
     _entranceAnimation = CurvedAnimation(
       parent: _entranceController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOutQuad,
     );
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) _entranceController.forward();
     });
     _checkAuth();
@@ -145,12 +145,14 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: AppColors.white,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           _buildScatteredAuras(screenWidth, screenHeight),
           AnimatedBuilder(
             animation: Listenable.merge([_entranceAnimation, _dragAnimation]),
-            builder: (context, child) {
+            builder: (ctx, child) {
+              final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
               final tE = _entranceAnimation.value;
               final tD = _dragAnimation.value;
               const logoSize = 180.0;
@@ -166,7 +168,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               final logoScale = 1.0 - (tD * 0.2);
               final sheetStartTop = screenHeight;
               final sheetCoverTop = screenHeight * 0.55;
-              final sheetLoginTop = screenHeight * 0.35;
+              final sheetLoginTop = (screenHeight * 0.35 - keyboardHeight).clamp(0.0, screenHeight * 0.35);
               final sheetPos = lerpDouble(
                 lerpDouble(sheetStartTop, sheetCoverTop, tE),
                 sheetLoginTop,
@@ -292,7 +294,38 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('TBCare+', style: AppTextStyles.heading1),
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 24,
+                color: Color(0xFF076453),
+                letterSpacing: -0.5,
+              ),
+              children: [
+                const TextSpan(
+                  text: 'TB',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const TextSpan(
+                  text: 'Care',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                WidgetSpan(
+                  child: Transform.translate(
+                    offset: const Offset(0, -6),
+                    child: const Text(
+                      '+',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF00BC99),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
           const Text(
             'Deteksi Dini untuk Kesehatan Lebih Baik. Pantau gejala Anda dan dapatkan wawasan akurat secara instan.',
@@ -308,7 +341,6 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   Widget _buildLoginSheetItems() {
     return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
       child: Column(
         children: [
@@ -636,41 +668,27 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   Widget _buildLogoWidget() {
     return Container(
-          width: 210,
-          height: 210,
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(52),
+      width: 180,
+      height: 180,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(52),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 40,
+            offset: const Offset(0, 10),
           ),
-          padding: const EdgeInsets.all(10),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  AppColors.primary.withOpacity(0.22),
-                  AppColors.white.withOpacity(0.14),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(46),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Center(
-                child: Image.asset(
-                  'assets/images/img_logo_app.png',
-                  width: 155,
-                  height: 155,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
+        ],
+      ),
+      child: Center(
+        child: Image.asset(
+          'assets/images/img_logo_app.png',
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
         ),
+      ),
     );
   }
 
@@ -678,24 +696,24 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
     return Stack(
       children: [
         Positioned(
-          top: -50,
-          left: -50,
-          child: _buildAura(400, AppColors.primary.withOpacity(0.15)),
+          top: -40,
+          left: -40,
+          child: _buildAura(100, AppColors.primary.withOpacity(0.08)),
         ),
         Positioned(
           top: sh * 0.2,
-          right: -100,
-          child: _buildAura(350, AppColors.primary.withOpacity(0.1)),
+          right: -60,
+          child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
         ),
         Positioned(
           bottom: sh * 0.2,
-          left: -100,
-          child: _buildAura(300, AppColors.accent.withOpacity(0.12)),
+          left: -60,
+          child: _buildAura(70, AppColors.accent.withOpacity(0.06)),
         ),
         Positioned(
           top: sh * 0.5,
           left: sw * 0.4,
-          child: _buildAura(250, AppColors.primary.withOpacity(0.1)),
+          child: _buildAura(60, AppColors.primary.withOpacity(0.05)),
         ),
       ],
     );
@@ -703,11 +721,13 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   Widget _buildAura(double size, Color color) {
     return Container(
-      width: size,
-      height: size,
+      width: size * 2,
+      height: size * 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+        boxShadow: [
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
+        ],
       ),
     );
   }

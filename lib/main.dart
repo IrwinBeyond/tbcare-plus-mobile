@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: AppRoutes.navigatorKey,
-      title: 'TB Care Plus',
+      title: 'TBCare+',
       theme: AppTheme.lightTheme,
       initialRoute: AppRoutes.cover,
       onGenerateRoute: (settings) {

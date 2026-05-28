@@ -163,9 +163,10 @@ class _HomePageState extends State<HomePage> {
     if (user != null) {
       try {
         final updatedUser = await AuthApiService.fetchCurrentUser();
-        if (mounted && updatedUser.fullName != _userName) {
+        if (mounted) {
           setState(() {
             _userName = updatedUser.fullName;
+            _profilePicture = updatedUser.profilePicture;
           });
         }
       } catch (e) {

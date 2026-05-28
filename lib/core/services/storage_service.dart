@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/auth_models.dart';
@@ -34,7 +35,9 @@ class StorageService {
   static Future<void> saveUser(UserModel user) async {
     _cachedUser = user;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyUser, user.toJsonString());
+    // Exclude profilePicture from persistence — data URLs are too large for SharedPreferences
+    final lean = user.toJson()..remove('profilePicture');
+    await prefs.setString(AppConstants.keyUser, jsonEncode(lean));
   }
 
   static Future<UserModel?> getUser() async {

@@ -157,41 +157,37 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
 
   Widget _buildHeader(BuildContext context, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withOpacity(0.7),
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: color,
-              ),
+              child: const Icon(Icons.arrow_back, color: AppColors.foreground, size: 20),
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
-            'Detail Pemeriksaan',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.foreground,
+          const Expanded(
+            child: Text(
+              'Detail Pemeriksaan',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.foreground, letterSpacing: -0.3),
             ),
           ),
+          const SizedBox(width: 40),
         ],
       ),
     );
@@ -296,8 +292,8 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     const SizedBox(height: 4),
                     Text(
                       widget.item['riskLevelCode'] == 'HIGH'
-                          ? 'Requires immediate attention'
-                          : 'Monitor your condition',
+                          ? 'Memerlukan perhatian segera'
+                          : 'Pantau kondisi Anda',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -580,7 +576,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Recommendation',
+                  'Rekomendasi',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,

@@ -35,6 +35,7 @@ class AppConstants {
   // ── API Paths ────────────────────────────────────────────────────────
   static final String authRegister = '$baseUrl/api/v1/auth/register';
   static final String authLogin = '$baseUrl/api/v1/auth/login';
+  static final String authChangePassword = '$baseUrl/api/v1/auth/change-password';
   static final String usersMe = '$baseUrl/api/v1/auth/me';
   static final String usersUpdateMe = '$baseUrl/api/v1/auth/me';
   static final String quickCheckConfig =

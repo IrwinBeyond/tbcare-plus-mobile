@@ -400,7 +400,12 @@ class _ResultPageState extends State<ResultPage> {
   }
 
   void _goHome() {
-    Navigator.popUntil(context, ModalRoute.withName(AppRoutes.home));
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
+      arguments: {'isGuest': _isGuest},
+    );
   }
 
   int _riskRank(String? code) {

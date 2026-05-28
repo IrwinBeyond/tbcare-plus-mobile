@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
+import '../../../core/services/asset_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/guest_bottom_nav.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
@@ -320,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
               image: _profilePicUrl.isNotEmpty
                   ? DecorationImage(
-                      image: NetworkImage(_profilePicUrl),
+                      image: _profileImage(_profilePicUrl),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -545,3 +546,5 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
   );
 }
+
+ImageProvider _profileImage(String url) => AssetService.profileImage(url);

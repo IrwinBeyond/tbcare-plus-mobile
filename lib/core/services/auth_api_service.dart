@@ -171,6 +171,51 @@ class AuthApiService {
     }
   }
 
+  // ── Change Password ──────────────────────────────────────────────────
+  static Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final token = await StorageService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+    }
+
+    final body = jsonEncode({
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+    });
+
+    final response = await http
+        .post(
+          Uri.parse(AppConstants.authChangePassword),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: body,
+        )
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 401) {
+      throw Exception('Sesi login telah berakhir. Silakan login kembali.');
+    }
+
+    if (response.statusCode != 200) {
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final message =
+            (json['message'] as String?) ?? 'Gagal mengubah kata sandi.';
+        throw Exception(message);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Gagal mengubah kata sandi.');
+      }
+    }
+  }
+
   // ── Logout ────────────────────────────────────────────────────────────
   static Future<void> logout() async {
     await StorageService.clear();

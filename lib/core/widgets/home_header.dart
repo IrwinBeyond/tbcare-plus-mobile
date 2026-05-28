@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
+import '../../core/services/asset_service.dart';
+
+ImageProvider _profileImage(String url) => AssetService.profileImage(url);
 
 class HomeHeader extends StatelessWidget {
   final bool isGuest;
@@ -118,7 +121,7 @@ class HomeHeader extends StatelessWidget {
                       color: isGuest ? AppColors.muted.withOpacity(0.3) : null,
                       border: Border.all(color: Colors.white, width: 2),
                       image: (!isGuest && profilePicture != null && profilePicture!.isNotEmpty)
-                          ? DecorationImage(image: NetworkImage(profilePicture!), fit: BoxFit.cover)
+                          ? DecorationImage(image: _profileImage(profilePicture!), fit: BoxFit.cover)
                           : null,
                       boxShadow: [
                         BoxShadow(

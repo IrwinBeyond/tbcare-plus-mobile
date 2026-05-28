@@ -1,4 +1,4 @@
-package com.example.tbcare_plus
+package com.penseepis.tbcareplus
 
 import io.flutter.embedding.android.FlutterActivity
 

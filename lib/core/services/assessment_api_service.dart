@@ -58,10 +58,7 @@ class AssessmentApiService {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final payload = {
-      'assessmentTypeId': assessmentTypeId,
-      'answers': answers,
-    };
+    final payload = {'assessmentTypeId': assessmentTypeId, 'answers': answers};
 
     final response = await http
         .post(
@@ -81,12 +78,15 @@ class AssessmentApiService {
     if (response.statusCode != 200) {
       try {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final message = (json['message'] as String?) ?? 'Gagal menyimpan assessment.';
+        final message =
+            (json['message'] as String?) ?? 'Gagal menyimpan assessment.';
         throw Exception('[${response.statusCode}] $message');
       } catch (_) {
         final body = response.body.trim();
         final snippet = body.length > 500 ? body.substring(0, 500) : body;
-        throw Exception('[${response.statusCode}] Gagal menyimpan assessment. Response: $snippet');
+        throw Exception(
+          '[${response.statusCode}] Gagal menyimpan assessment. Response: $snippet',
+        );
       }
     }
 
@@ -104,12 +104,12 @@ class AssessmentApiService {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final response = await http.get(
-      Uri.parse(AppConstants.assessmentHistory),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(
+          Uri.parse(AppConstants.assessmentHistory),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401) {
       await _handleUnauthorized();
@@ -131,12 +131,12 @@ class AssessmentApiService {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final response = await http.get(
-      Uri.parse(AppConstants.assessmentHistorySessions),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(
+          Uri.parse(AppConstants.assessmentHistorySessions),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401) {
       await _handleUnauthorized();
@@ -152,18 +152,20 @@ class AssessmentApiService {
     return [];
   }
 
-  static Future<Map<String, dynamic>?> fetchHistorySessionDetail(String sessionKey) async {
+  static Future<Map<String, dynamic>?> fetchHistorySessionDetail(
+    String sessionKey,
+  ) async {
     final token = await StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final response = await http.get(
-      Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(
+          Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401) {
       await _handleUnauthorized();
@@ -182,12 +184,12 @@ class AssessmentApiService {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final response = await http.get(
-      Uri.parse(AppConstants.assessmentHistoryDetail(id)),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(
+          Uri.parse(AppConstants.assessmentHistoryDetail(id)),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401) {
       await _handleUnauthorized();
@@ -242,27 +244,41 @@ class AssessmentApiService {
       for (final it in items) {
         if (it is! Map) continue;
         final m = Map<String, dynamic>.from(it.cast<String, dynamic>());
-        final rl = getField(m, ['riskLevel', 'riskLevel']) as Map<String, dynamic>? ??
+        final rl =
+            getField(m, ['riskLevel', 'riskLevel']) as Map<String, dynamic>? ??
             getField(m, ['riskLevelMap', 'RiskLevel']) as Map<String, dynamic>?;
         String? code;
         if (rl is Map<String, dynamic>) {
           code = getField(rl, ['code', 'Code', 'riskCode']) as String?;
         }
-        final scoreVal = getField(m, ['totalScore', 'TotalScore', 'total_score']);
-        final score = (scoreVal is num) ? scoreVal.toDouble() : (double.tryParse(scoreVal?.toString() ?? '') ?? 0.0);
+        final scoreVal = getField(m, [
+          'totalScore',
+          'TotalScore',
+          'total_score',
+        ]);
+        final score = (scoreVal is num)
+            ? scoreVal.toDouble()
+            : (double.tryParse(scoreVal?.toString() ?? '') ?? 0.0);
 
         if (best == null) {
           best = m;
           continue;
         }
 
-        final bestRl = getField(best, ['riskLevel', 'riskLevel']) as Map<String, dynamic>?;
+        final bestRl =
+            getField(best, ['riskLevel', 'riskLevel']) as Map<String, dynamic>?;
         String? bestCode;
         if (bestRl is Map<String, dynamic>) {
           bestCode = getField(bestRl, ['code', 'Code', 'riskCode']) as String?;
         }
-        final bestScoreVal = getField(best, ['totalScore', 'TotalScore', 'total_score']);
-        final bestScore = (bestScoreVal is num) ? bestScoreVal.toDouble() : (double.tryParse(bestScoreVal?.toString() ?? '') ?? 0.0);
+        final bestScoreVal = getField(best, [
+          'totalScore',
+          'TotalScore',
+          'total_score',
+        ]);
+        final bestScore = (bestScoreVal is num)
+            ? bestScoreVal.toDouble()
+            : (double.tryParse(bestScoreVal?.toString() ?? '') ?? 0.0);
 
         final r1 = riskRankFromCode(code);
         final r2 = riskRankFromCode(bestCode);
@@ -276,13 +292,41 @@ class AssessmentApiService {
       final mapped = <String, dynamic>{
         'sessionKey': details['sessionKey'] ?? mostRecent['sessionKey'],
         'createdAt': details['createdAt'] ?? mostRecent['createdAt'],
-        'assessmentTypeId': getField(details, ['assessmentTypeId', 'AssessmentTypeId']) ?? getField(first, ['assessmentTypeId', 'AssessmentTypeId']),
-        'assessmentTypeName': getField(details, ['assessmentTypeName', 'AssessmentTypeName']) ?? getField(first, ['assessmentTypeName', 'AssessmentTypeName']),
-        'riskLevelCode': getField(first, ['riskLevelCode', 'RiskLevelCode', 'riskCode']) ?? (getField(getField(first, ['riskLevel', 'riskLevel']) as Map<String, dynamic>? ?? <String,dynamic>{}, ['code', 'Code', 'riskCode']) ?? ''),
-        'riskLevelTitle': getField(first, ['riskLevelTitle', 'RiskLevelTitle', 'riskTitle']) ?? (getField(getField(first, ['riskLevel', 'riskLevel']) as Map<String, dynamic>? ?? <String,dynamic>{}, ['title', 'Title']) ?? ''),
+        'assessmentTypeId':
+            getField(details, ['assessmentTypeId', 'AssessmentTypeId']) ??
+            getField(first, ['assessmentTypeId', 'AssessmentTypeId']),
+        'assessmentTypeName':
+            getField(details, ['assessmentTypeName', 'AssessmentTypeName']) ??
+            getField(first, ['assessmentTypeName', 'AssessmentTypeName']),
+        'riskLevelCode':
+            getField(first, ['riskLevelCode', 'RiskLevelCode', 'riskCode']) ??
+            (getField(
+                  getField(first, ['riskLevel', 'riskLevel'])
+                          as Map<String, dynamic>? ??
+                      <String, dynamic>{},
+                  ['code', 'Code', 'riskCode'],
+                ) ??
+                ''),
+        'riskLevelTitle':
+            getField(first, [
+              'riskLevelTitle',
+              'RiskLevelTitle',
+              'riskTitle',
+            ]) ??
+            (getField(
+                  getField(first, ['riskLevel', 'riskLevel'])
+                          as Map<String, dynamic>? ??
+                      <String, dynamic>{},
+                  ['title', 'Title'],
+                ) ??
+                ''),
         'totalScore': getField(first, ['totalScore', 'TotalScore']) ?? 0,
-        'primaryTbTypeId': getField(first, ['primaryTbTypeId', 'PrimaryTbTypeId']) ?? getField(first, ['tbTypeId', 'TbTypeId']),
-        'primaryTbTypeName': getField(first, ['primaryTbTypeName', 'PrimaryTbTypeName']) ?? getField(first, ['tbTypeName', 'TbTypeName']),
+        'primaryTbTypeId':
+            getField(first, ['primaryTbTypeId', 'PrimaryTbTypeId']) ??
+            getField(first, ['tbTypeId', 'TbTypeId']),
+        'primaryTbTypeName':
+            getField(first, ['primaryTbTypeName', 'PrimaryTbTypeName']) ??
+            getField(first, ['tbTypeName', 'TbTypeName']),
         'detailItem': first,
       };
 

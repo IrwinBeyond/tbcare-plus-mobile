@@ -4,8 +4,9 @@ import '../../../core/theme/app_colors.dart';
 
 class HistoryDetailPage extends StatefulWidget {
   final Map<String, dynamic> item;
+  final Map<String, dynamic>? detail;
 
-  const HistoryDetailPage({super.key, required this.item});
+  const HistoryDetailPage({super.key, required this.item, this.detail});
 
   @override
   State<HistoryDetailPage> createState() => _HistoryDetailPageState();
@@ -23,9 +24,19 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   }
 
   Future<void> _loadDetail() async {
+    if (widget.detail != null) {
+      setState(() {
+        _detail = widget.detail;
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final sessionKey = (widget.item['sessionKey'] as String?) ?? '';
-      final detail = await AssessmentApiService.fetchHistorySessionDetail(sessionKey);
+      final detail = await AssessmentApiService.fetchHistorySessionDetail(
+        sessionKey,
+      );
       if (!mounted) return;
       setState(() {
         _detail = detail;
@@ -43,8 +54,10 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final items = (_detail?['items'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-    
+    final items =
+        (_detail?['items'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+        [];
+
     // Sort items: High risk first, then by score
     int riskWeight(String? code) {
       final c = (code ?? '').toUpperCase();
@@ -62,11 +75,14 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       return s2.compareTo(s1);
     });
 
-    String recommendation = 'Silakan kunjungi fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut.';
+    String recommendation =
+        'Silakan kunjungi fasilitas kesehatan terdekat untuk pemeriksaan lebih lanjut.';
     if (items.isNotEmpty) {
       for (final it in items) {
         final breakdown = it['scoreBreakdown'];
-        if (breakdown is Map && breakdown['results'] is List && (breakdown['results'] as List).isNotEmpty) {
+        if (breakdown is Map &&
+            breakdown['results'] is List &&
+            (breakdown['results'] as List).isNotEmpty) {
           final primaryResult = (breakdown['results'] as List).first;
           if (primaryResult is Map && primaryResult['riskLevel'] is Map) {
             final rec = (primaryResult['riskLevel'] as Map)['recommendation'];
@@ -94,7 +110,10 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
                       : SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -114,10 +133,13 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                ...items.map((it) => _buildTbTypeSection(context, it, color)),
+                                ...items.map(
+                                  (it) =>
+                                      _buildTbTypeSection(context, it, color),
+                                ),
                                 const SizedBox(height: 32),
                               ],
-                              
+
                               // Recommendation
                               _buildRecommendationCard(color, recommendation),
                               const SizedBox(height: 40),
@@ -154,7 +176,11 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                   ),
                 ],
               ),
-              child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: color),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -263,7 +289,9 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.item['riskLevelCode'] == 'HIGH' ? 'Requires immediate attention' : 'Monitor your condition',
+                      widget.item['riskLevelCode'] == 'HIGH'
+                          ? 'Requires immediate attention'
+                          : 'Monitor your condition',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -280,9 +308,15 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     );
   }
 
-  Widget _buildTbTypeSection(BuildContext context, Map<String, dynamic> item, Color themeColor) {
+  Widget _buildTbTypeSection(
+    BuildContext context,
+    Map<String, dynamic> item,
+    Color themeColor,
+  ) {
     final tbTypeName = (item['primaryTbTypeName'] ?? '').toString();
-    final score = (item['totalScore'] is num) ? (item['totalScore'] as num).round() : 0;
+    final score = (item['totalScore'] is num)
+        ? (item['totalScore'] as num).round()
+        : 0;
     final riskTitle = (item['riskLevelTitle'] ?? 'Low Risk').toString();
     final riskCode = (item['riskLevelCode'] ?? 'LOW').toString().toUpperCase();
     // Ensure card color matches risk level (Low=green, Medium=yellow, High=red)
@@ -296,11 +330,15 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     }
 
     final selectedSymptomsRaw = item['selectedSymptoms'];
-    final selectedSymptoms = selectedSymptomsRaw is List ? selectedSymptomsRaw : <dynamic>[];
+    final selectedSymptoms = selectedSymptomsRaw is List
+        ? selectedSymptomsRaw
+        : <dynamic>[];
 
     // Only include symptoms actually selected by user (cfValue > 0)
     final symptoms = selectedSymptoms
-        .where((s) => s is Map && (s['cfValue'] is num) && (s['cfValue'] as num) > 0)
+        .where(
+          (s) => s is Map && (s['cfValue'] is num) && (s['cfValue'] as num) > 0,
+        )
         .map((s) {
           final m = s as Map;
           return {
@@ -362,7 +400,10 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: resolvedColor.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(100),
@@ -378,7 +419,9 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                       ),
                       const SizedBox(width: 8),
                       Icon(
-                        isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        isExpanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
                         color: resolvedColor,
                         size: 24,
                       ),
@@ -405,13 +448,17 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     ),
                     const SizedBox(height: 10),
                     // Use expansion tiles for each symptom instead of a popup
-                    ...symptoms.map((s) => _buildSymptomItem(context, s, resolvedColor)),
+                    ...symptoms.map(
+                      (s) => _buildSymptomItem(context, s, resolvedColor),
+                    ),
                   ],
                 ],
               ),
             ),
             secondChild: const SizedBox.shrink(),
-            crossFadeState: isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
             duration: const Duration(milliseconds: 300),
           ),
         ],
@@ -419,7 +466,11 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     );
   }
 
-  Widget _buildSymptomItem(BuildContext context, Map<String, dynamic> symptom, Color themeColor) {
+  Widget _buildSymptomItem(
+    BuildContext context,
+    Map<String, dynamic> symptom,
+    Color themeColor,
+  ) {
     final controller = ExpansionTileController();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -431,13 +482,19 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       child: ExpansionTile(
         controller: controller,
         tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        childrenPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         leading: Container(
           width: 48,
           height: 48,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [themeColor.withOpacity(0.15), themeColor.withOpacity(0.05)],
+              colors: [
+                themeColor.withOpacity(0.15),
+                themeColor.withOpacity(0.05),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -449,7 +506,11 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
           symptom['name'],
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.foreground),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.foreground,
+          ),
         ),
         children: [
           Align(
@@ -459,7 +520,11 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               children: [
                 Text(
                   symptom['desc'],
-                  style: TextStyle(fontSize: 14, color: AppColors.foreground.withOpacity(0.8), height: 1.6),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.foreground.withOpacity(0.8),
+                    height: 1.6,
+                  ),
                 ),
               ],
             ),
@@ -473,10 +538,21 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               },
               style: TextButton.styleFrom(
                 backgroundColor: themeColor,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Mengerti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              child: const Text(
+                'Mengerti',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
         ],
@@ -562,11 +638,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size / 2,
-          ),
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
         ],
       ),
     );

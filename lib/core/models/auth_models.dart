@@ -4,6 +4,7 @@ class UserModel {
   final String id;
   final String? fullName;
   final String? email;
+  final String? profilePicture;
   final String? role;
   final bool isActive;
   final DateTime createdAt;
@@ -13,6 +14,7 @@ class UserModel {
     required this.id,
     this.fullName,
     this.email,
+    this.profilePicture,
     this.role,
     required this.isActive,
     required this.createdAt,
@@ -21,22 +23,24 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id:        json['id'] as String,
-      fullName:  json['fullName'] as String?,
-      email:     json['email'] as String?,
-      role:      json['role'] as String?,
-      isActive:  json['isActive'] as bool? ?? true,
+      id: json['id'] as String,
+      fullName: json['fullName'] as String?,
+      email: json['email'] as String?,
+      profilePicture: json['profilePicture'] as String?,
+      role: json['role'] as String?,
+      isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id':        id,
-    'fullName':  fullName,
-    'email':     email,
-    'role':      role,
-    'isActive':  isActive,
+    'id': id,
+    'fullName': fullName,
+    'email': email,
+    'profilePicture': profilePicture,
+    'role': role,
+    'isActive': isActive,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -62,10 +66,10 @@ class AuthResponse {
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
-      accessToken:  json['accessToken']  as String,
+      accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
-      expiresIn:    (json['expiresIn'] as num).toInt(),
-      user:         UserModel.fromJson(json['user'] as Map<String, dynamic>),
+      expiresIn: (json['expiresIn'] as num).toInt(),
+      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
     );
   }
 }

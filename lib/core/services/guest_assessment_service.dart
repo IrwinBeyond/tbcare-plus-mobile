@@ -6,7 +6,10 @@ class GuestAssessmentService {
   static Future<void> save(Map<String, dynamic> assessment) async {
     final prefs = await SharedPreferences.getInstance();
     assessment['savedAt'] = DateTime.now().toIso8601String();
-    await prefs.setString(AppConstants.keyGuestAssessment, jsonEncode(assessment));
+    await prefs.setString(
+      AppConstants.keyGuestAssessment,
+      jsonEncode(assessment),
+    );
   }
 
   static Future<Map<String, dynamic>?> get() async {

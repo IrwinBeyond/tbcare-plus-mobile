@@ -15,11 +15,15 @@ class QuickCheckConfig {
 
   factory QuickCheckConfig.fromJson(Map<String, dynamic> json) {
     return QuickCheckConfig(
-      questions: (json['questions'] as List<dynamic>?)
-              ?.map((q) => QuickCheckQuestion.fromJson(q as Map<String, dynamic>))
+      questions:
+          (json['questions'] as List<dynamic>?)
+              ?.map(
+                (q) => QuickCheckQuestion.fromJson(q as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      riskLevels: (json['riskLevels'] as List<dynamic>?)
+      riskLevels:
+          (json['riskLevels'] as List<dynamic>?)
               ?.map((r) => RiskLevelConfig.fromJson(r as Map<String, dynamic>))
               .toList() ??
           [],
@@ -29,11 +33,11 @@ class QuickCheckConfig {
   }
 
   Map<String, dynamic> toJson() => {
-        'questions': questions.map((q) => q.toJson()).toList(),
-        'riskLevels': riskLevels.map((r) => r.toJson()).toList(),
-        'scoringMethod': scoringMethod,
-        'saturationK': saturationK,
-      };
+    'questions': questions.map((q) => q.toJson()).toList(),
+    'riskLevels': riskLevels.map((r) => r.toJson()).toList(),
+    'scoringMethod': scoringMethod,
+    'saturationK': saturationK,
+  };
 
   String toJsonString() => jsonEncode(toJson());
 
@@ -42,59 +46,123 @@ class QuickCheckConfig {
 
   RiskLevelConfig? findRiskLevel(double totalScore, int tbTypeId) {
     return riskLevels.cast<RiskLevelConfig?>().firstWhere(
-          (r) => r!.tbTypeId == tbTypeId && totalScore >= r.minScore && totalScore <= r.maxScore,
-          orElse: () => null,
-        );
+      (r) =>
+          r!.tbTypeId == tbTypeId &&
+          totalScore >= r.minScore &&
+          totalScore <= r.maxScore,
+      orElse: () => null,
+    );
   }
 
   static QuickCheckConfig fallback() {
     return QuickCheckConfig(
       questions: [
         QuickCheckQuestion(
-          questionId: 1, symptomId: 1, symptomCode: 'COUGH_2W',
-          symptomName: 'Batuk Terus-menerus', questionText: 'Batuk terus-menerus selama 2+ minggu',
-          sortOrder: 1, weight: 0.15, tbTypeId: 1,
+          questionId: 1,
+          symptomId: 1,
+          symptomCode: 'COUGH_2W',
+          symptomName: 'Batuk Terus-menerus',
+          questionText: 'Batuk terus-menerus selama 2+ minggu',
+          sortOrder: 1,
+          weight: 0.15,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 2, symptomId: 2, symptomCode: 'COUGH_BLOOD',
-          symptomName: 'Batuk Darah', questionText: 'Batuk berdarah',
-          sortOrder: 2, weight: 0.20, tbTypeId: 1,
+          questionId: 2,
+          symptomId: 2,
+          symptomCode: 'COUGH_BLOOD',
+          symptomName: 'Batuk Darah',
+          questionText: 'Batuk berdarah',
+          sortOrder: 2,
+          weight: 0.20,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 3, symptomId: 3, symptomCode: 'CHEST_PAIN',
-          symptomName: 'Nyeri Dada', questionText: 'Nyeri atau sesak dada',
-          sortOrder: 3, weight: 0.10, tbTypeId: 1,
+          questionId: 3,
+          symptomId: 3,
+          symptomCode: 'CHEST_PAIN',
+          symptomName: 'Nyeri Dada',
+          questionText: 'Nyeri atau sesak dada',
+          sortOrder: 3,
+          weight: 0.10,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 4, symptomId: 4, symptomCode: 'SHORT_BREATH',
-          symptomName: 'Sesak Napas', questionText: 'Sesak napas',
-          sortOrder: 4, weight: 0.10, tbTypeId: 1,
+          questionId: 4,
+          symptomId: 4,
+          symptomCode: 'SHORT_BREATH',
+          symptomName: 'Sesak Napas',
+          questionText: 'Sesak napas',
+          sortOrder: 4,
+          weight: 0.10,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 5, symptomId: 5, symptomCode: 'WEIGHT_LOSS',
-          symptomName: 'Penurunan Berat Badan', questionText: 'Penurunan berat badan tanpa sebab',
-          sortOrder: 5, weight: 0.15, tbTypeId: 1,
+          questionId: 5,
+          symptomId: 5,
+          symptomCode: 'WEIGHT_LOSS',
+          symptomName: 'Penurunan Berat Badan',
+          questionText: 'Penurunan berat badan tanpa sebab',
+          sortOrder: 5,
+          weight: 0.15,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 6, symptomId: 6, symptomCode: 'FEVER',
-          symptomName: 'Demam Berkepanjangan', questionText: 'Demam berkepanjangan atau menggigil',
-          sortOrder: 6, weight: 0.10, tbTypeId: 1,
+          questionId: 6,
+          symptomId: 6,
+          symptomCode: 'FEVER',
+          symptomName: 'Demam Berkepanjangan',
+          questionText: 'Demam berkepanjangan atau menggigil',
+          sortOrder: 6,
+          weight: 0.10,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 7, symptomId: 7, symptomCode: 'NIGHT_SWEATS',
-          symptomName: 'Keringat Malam', questionText: 'Keringat malam',
-          sortOrder: 7, weight: 0.10, tbTypeId: 1,
+          questionId: 7,
+          symptomId: 7,
+          symptomCode: 'NIGHT_SWEATS',
+          symptomName: 'Keringat Malam',
+          questionText: 'Keringat malam',
+          sortOrder: 7,
+          weight: 0.10,
+          tbTypeId: 1,
         ),
         QuickCheckQuestion(
-          questionId: 8, symptomId: 8, symptomCode: 'FATIGUE',
-          symptomName: 'Kelelahan & Kelemahan', questionText: 'Merasa lemah atau lelah',
-          sortOrder: 8, weight: 0.10, tbTypeId: 1,
+          questionId: 8,
+          symptomId: 8,
+          symptomCode: 'FATIGUE',
+          symptomName: 'Kelelahan & Kelemahan',
+          questionText: 'Merasa lemah atau lelah',
+          sortOrder: 8,
+          weight: 0.10,
+          tbTypeId: 1,
         ),
       ],
       riskLevels: [
-        RiskLevelConfig(id: 1, tbTypeId: 1, code: 'LOW', title: 'Risiko Rendah', minScore: 0, maxScore: 30),
-        RiskLevelConfig(id: 2, tbTypeId: 1, code: 'MEDIUM', title: 'Risiko Sedang', minScore: 31, maxScore: 60),
-        RiskLevelConfig(id: 3, tbTypeId: 1, code: 'HIGH', title: 'Risiko Tinggi', minScore: 61, maxScore: 100),
+        RiskLevelConfig(
+          id: 1,
+          tbTypeId: 1,
+          code: 'LOW',
+          title: 'Risiko Rendah',
+          minScore: 0,
+          maxScore: 30,
+        ),
+        RiskLevelConfig(
+          id: 2,
+          tbTypeId: 1,
+          code: 'MEDIUM',
+          title: 'Risiko Sedang',
+          minScore: 31,
+          maxScore: 60,
+        ),
+        RiskLevelConfig(
+          id: 3,
+          tbTypeId: 1,
+          code: 'HIGH',
+          title: 'Risiko Tinggi',
+          minScore: 61,
+          maxScore: 100,
+        ),
       ],
     );
   }
@@ -144,18 +212,18 @@ class QuickCheckQuestion {
   }
 
   Map<String, dynamic> toJson() => {
-        'questionId': questionId,
-        'symptomId': symptomId,
-        'symptomCode': symptomCode,
-        'symptomName': symptomName,
-        'symptomDescription': symptomDescription,
-        'questionText': questionText,
-        'sortOrder': sortOrder,
-        'isRequired': isRequired,
-        'weight': weight,
-        'tbTypeId': tbTypeId,
-        'tbTypeName': tbTypeName,
-      };
+    'questionId': questionId,
+    'symptomId': symptomId,
+    'symptomCode': symptomCode,
+    'symptomName': symptomName,
+    'symptomDescription': symptomDescription,
+    'questionText': questionText,
+    'sortOrder': sortOrder,
+    'isRequired': isRequired,
+    'weight': weight,
+    'tbTypeId': tbTypeId,
+    'tbTypeName': tbTypeName,
+  };
 }
 
 class RiskLevelConfig {
@@ -193,13 +261,13 @@ class RiskLevelConfig {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'tbTypeId': tbTypeId,
-        'code': code,
-        'title': title,
-        'minScore': minScore,
-        'maxScore': maxScore,
-        'description': description,
-        'recommendation': recommendation,
-      };
+    'id': id,
+    'tbTypeId': tbTypeId,
+    'code': code,
+    'title': title,
+    'minScore': minScore,
+    'maxScore': maxScore,
+    'description': description,
+    'recommendation': recommendation,
+  };
 }

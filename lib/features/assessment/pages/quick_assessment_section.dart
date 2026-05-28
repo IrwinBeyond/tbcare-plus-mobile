@@ -5,10 +5,6 @@ class QuickAssessmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Text('Bagian Pemeriksaan Cepat'),
-      ],
-    );
+    return const Column(children: [Text('Bagian Pemeriksaan Cepat')]);
   }
 }

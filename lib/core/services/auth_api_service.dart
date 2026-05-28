@@ -20,21 +20,29 @@ class AuthApiService {
     String? nickname,
   }) async {
     final body = jsonEncode({
-      'email':    email,
+      'email': email,
       'password': password,
       if (nickname != null && nickname.isNotEmpty) 'nickname': nickname,
     });
 
     try {
       final response = await http
-          .post(Uri.parse(AppConstants.authRegister), headers: _headers, body: body)
+          .post(
+            Uri.parse(AppConstants.authRegister),
+            headers: _headers,
+            body: body,
+          )
           .timeout(const Duration(seconds: 30));
 
       return _handleAuthResponse(response);
     } on TimeoutException {
-      throw Exception('Server tidak merespons. Pastikan backend sedang berjalan.');
+      throw Exception(
+        'Server tidak merespons. Pastikan backend sedang berjalan.',
+      );
     } on SocketException {
-      throw Exception('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
     } on HttpException {
       throw Exception('Terjadi kesalahan jaringan. Coba lagi.');
     } on FormatException {
@@ -51,14 +59,22 @@ class AuthApiService {
 
     try {
       final response = await http
-          .post(Uri.parse(AppConstants.authLogin), headers: _headers, body: body)
+          .post(
+            Uri.parse(AppConstants.authLogin),
+            headers: _headers,
+            body: body,
+          )
           .timeout(const Duration(seconds: 30));
 
       return _handleAuthResponse(response);
     } on TimeoutException {
-      throw Exception('Server tidak merespons. Pastikan backend sedang berjalan.');
+      throw Exception(
+        'Server tidak merespons. Pastikan backend sedang berjalan.',
+      );
     } on SocketException {
-      throw Exception('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
     } on HttpException {
       throw Exception('Terjadi kesalahan jaringan. Coba lagi.');
     } on FormatException {
@@ -73,10 +89,7 @@ class AuthApiService {
       throw Exception('Token tidak ditemukan. Silakan login kembali.');
     }
 
-    final headers = {
-      ..._headers,
-      'Authorization': 'Bearer $token',
-    };
+    final headers = {..._headers, 'Authorization': 'Bearer $token'};
 
     try {
       final response = await http
@@ -93,20 +106,68 @@ class AuthApiService {
       if (response.statusCode == 200) {
         final data = json['data'] as Map<String, dynamic>;
         final user = UserModel.fromJson(data);
-        await StorageService.saveUser(user); // Cache updated user profile locally
+        await StorageService.saveUser(
+          user,
+        ); // Cache updated user profile locally
         return user;
       }
 
       final message = json['message'] as String? ?? 'Gagal memuat profil.';
       throw Exception(message);
     } on TimeoutException {
-      throw Exception('Server tidak merespons. Pastikan backend sedang berjalan.');
+      throw Exception(
+        'Server tidak merespons. Pastikan backend sedang berjalan.',
+      );
     } on SocketException {
-      throw Exception('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
     } on HttpException {
       throw Exception('Terjadi kesalahan jaringan. Coba lagi.');
     } on FormatException {
       throw Exception('Respons server tidak valid.');
+    }
+  }
+
+  // ── Update Profile ─────────────────────────────────────────────────────
+  static Future<void> updateProfile({
+    String? nickname,
+    String? profilePicture,
+  }) async {
+    final token = await StorageService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+    }
+
+    final body = <String, dynamic>{};
+    if (nickname != null) body['nickname'] = nickname;
+    if (profilePicture != null) body['profilePicture'] = profilePicture;
+
+    final response = await http
+        .put(
+          Uri.parse(AppConstants.usersUpdateMe),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 401) {
+      throw Exception('Sesi login telah berakhir. Silakan login kembali.');
+    }
+
+    if (response.statusCode != 200) {
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final message =
+            (json['message'] as String?) ?? 'Gagal memperbarui profil.';
+        throw Exception(message);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Gagal memperbarui profil.');
+      }
     }
   }
 
@@ -126,8 +187,8 @@ class AuthApiService {
 
     // Extract error message from backend ApiResponse shape
     final message = json['message'] as String? ?? 'Terjadi kesalahan.';
-    final errors  = (json['errors'] as List?)?.cast<String>();
-    final detail  = errors != null && errors.isNotEmpty
+    final errors = (json['errors'] as List?)?.cast<String>();
+    final detail = errors != null && errors.isNotEmpty
         ? '${message}\n${errors.join('\n')}'
         : message;
 

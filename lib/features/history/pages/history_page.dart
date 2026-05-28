@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -19,6 +18,7 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   bool _isGuest = true;
   String? _userName;
+  String? _profilePicture;
   List<Map<String, dynamic>> _historyItems = [];
   bool _loading = true;
 
@@ -48,7 +48,11 @@ class _HistoryPageState extends State<HistoryPage> {
     final loggedIn = await StorageService.isLoggedIn();
     if (!mounted) return;
     if (!loggedIn) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.cover, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.cover,
+        (route) => false,
+      );
       return;
     }
     final user = await StorageService.getUser();
@@ -56,6 +60,7 @@ class _HistoryPageState extends State<HistoryPage> {
     setState(() {
       _isGuest = false;
       _userName = user?.fullName;
+      _profilePicture = user?.profilePicture;
     });
 
     try {
@@ -68,6 +73,20 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  String _translateAssessmentType(String? dbValue) {
+    if (dbValue == null) return 'Pemeriksaan';
+    switch (dbValue.toLowerCase()) {
+      case 'quick assessment':
+      case 'quick check':
+        return 'Cek Cepat';
+      case 'full assessment':
+      case 'pemeriksaan lengkap':
+        return 'Pemeriksaan Lengkap';
+      default:
+        return dbValue; // Keep DB value as-is if unknown
     }
   }
 
@@ -87,10 +106,10 @@ class _HistoryPageState extends State<HistoryPage> {
           SafeArea(
             child: Column(
               children: [
-                HomeHeader(isGuest: _isGuest, userName: _userName),
+                HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -113,15 +132,17 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Timeline List
+                        // Content
                         _loading
                             ? const Padding(
                                 padding: EdgeInsets.only(top: 60),
-                                child: Center(child: CircularProgressIndicator()),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                               )
                             : _historyItems.isEmpty
-                                ? _buildEmptyState()
-                                : _buildTimelineList(),
+                            ? _buildEmptyState()
+                            : _buildTimelineList(),
                       ],
                     ),
                   ),
@@ -136,7 +157,11 @@ class _HistoryPageState extends State<HistoryPage> {
           : AppBottomNav(
               currentIndex: 1,
               onTap: (i) {
-                final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
+                final routes = [
+                  AppRoutes.home,
+                  AppRoutes.history,
+                  AppRoutes.profile,
+                ];
                 if (i < routes.length) {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -156,15 +181,23 @@ class _HistoryPageState extends State<HistoryPage> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(Icons.history_rounded, size: 80, color: AppColors.muted.withOpacity(0.5)),
+            Icon(
+              Icons.history_rounded,
+              size: 80,
+              color: AppColors.muted.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             const Text(
-              'No History Found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.mutedForeground),
+              'Belum Ada Riwayat',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.mutedForeground,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Your assessment results will appear here.',
+              'Hasil pemeriksaan Anda akan muncul di sini.',
               style: TextStyle(color: AppColors.mutedForeground),
             ),
           ],
@@ -180,25 +213,44 @@ class _HistoryPageState extends State<HistoryPage> {
       itemCount: _historyItems.length,
       itemBuilder: (context, index) {
         final raw = _historyItems[index];
-        
+
         DateTime createdAt;
         try {
           createdAt = DateTime.parse(raw['createdAt']);
         } catch (_) {
           createdAt = DateTime.now();
         }
-        
-        final dateStr = DateFormat('MMM dd, yyyy').format(createdAt).toUpperCase();
-        
-        final riskLevelCode = (raw['riskLevelCode'] ?? 'LOW').toString().toUpperCase();
+
+        // Indonesian date format: "27 Mei 2026"
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'Mei',
+          'Jun',
+          'Jul',
+          'Agu',
+          'Sep',
+          'Okt',
+          'Nov',
+          'Des',
+        ];
+        final dateStr =
+            '${createdAt.day} ${months[createdAt.month - 1]} ${createdAt.year}';
+
+        final riskLevelCode = (raw['riskLevelCode'] ?? 'LOW')
+            .toString()
+            .toUpperCase();
         Color color = AppColors.primary;
         IconData icon = Icons.check_circle_outline_rounded;
-        String riskTitle = raw['riskLevelTitle'] ?? 'Low Risk';
+        String riskTitle = (raw['riskLevelTitle'] ?? 'Low Risk').toString();
 
         if (riskLevelCode.contains('HIGH')) {
           color = const Color(0xFFEF4444);
           icon = Icons.error_outline_rounded;
-        } else if (riskLevelCode.contains('MEDIUM') || riskLevelCode.contains('MODERATE')) {
+        } else if (riskLevelCode.contains('MEDIUM') ||
+            riskLevelCode.contains('MODERATE')) {
           color = const Color(0xFFF59E0B);
           icon = Icons.warning_amber_rounded;
         } else {
@@ -206,14 +258,20 @@ class _HistoryPageState extends State<HistoryPage> {
           icon = Icons.check_circle_outline_rounded;
         }
 
+        final assessmentType = _translateAssessmentType(
+          raw['assessmentTypeName'] as String?,
+        );
+        final tbType = (raw['primaryTbTypeName'] ?? '').toString();
+        final percentage = '${(raw['totalScore'] as num).round()}%';
+
         final item = {
           'sessionKey': raw['sessionKey'],
           'date': dateStr,
           'riskLevel': riskTitle,
           'riskLevelCode': riskLevelCode,
-          'percentage': '${(raw['totalScore'] as num).round()}%',
-          'tbType': (raw['primaryTbTypeName'] ?? '').toString(),
-          'type': (raw['assessmentTypeName'] ?? 'ASSESSMENT').toString().toUpperCase(),
+          'percentage': percentage,
+          'tbType': tbType,
+          'type': assessmentType,
           'color': color,
           'icon': icon,
         };
@@ -275,102 +333,123 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Widget _buildHistoryCard(Map<String, dynamic> item) {
     final color = item['color'] as Color;
-    
+
     return Container(
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: Colors.white.withOpacity(0.7),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withOpacity(0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top row: date + type badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 13,
+                    color: AppColors.mutedForeground.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     item['date'] as String,
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      item['type'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.mutedForeground,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['riskLevel'] as String,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: color,
-                            height: 1.1,
-                          ),
-                        ),
-                        Text(
-                          '${item['tbType']} • ${item['percentage']}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: color.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  item['type'] as String,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    letterSpacing: 0.5,
                   ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: color.withOpacity(0.2)),
-                    ),
-                    child: Icon(
-                      item['icon'] as IconData,
-                      color: color.withOpacity(0.8),
-                      size: 20,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          // Risk level + score
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['riskLevel'] as String,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          item['percentage'] as String,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: color.withOpacity(0.8),
+                          ),
+                        ),
+                        if ((item['tbType'] as String).isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '• ${item['tbType']}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: color.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(item['icon'] as IconData, color: color, size: 22),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -404,11 +483,7 @@ class _HistoryPageState extends State<HistoryPage> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size / 2,
-          ),
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
         ],
       ),
     );

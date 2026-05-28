@@ -53,11 +53,17 @@ class AboutPage extends StatelessWidget {
                           title: 'Tujuan Kami',
                           child: Column(
                             children: [
-                              _buildCheckItem('Membantu pengguna mengidentifikasi gejala awal TBC'),
+                              _buildCheckItem(
+                                'Membantu pengguna mengidentifikasi gejala awal TBC',
+                              ),
                               const SizedBox(height: 12),
-                              _buildCheckItem('Mendorong konsultasi medis tepat waktu'),
+                              _buildCheckItem(
+                                'Mendorong konsultasi medis tepat waktu',
+                              ),
                               const SizedBox(height: 12),
-                              _buildCheckItem('Meningkatkan kesadaran tentang tuberkulosis'),
+                              _buildCheckItem(
+                                'Meningkatkan kesadaran tentang tuberkulosis',
+                              ),
                             ],
                           ),
                         ),
@@ -131,7 +137,11 @@ class AboutPage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(Icons.arrow_back, color: AppColors.foreground, size: 20),
+              child: const Icon(
+                Icons.arrow_back,
+                color: AppColors.foreground,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -167,56 +177,50 @@ class AboutPage extends StatelessWidget {
     required String title,
     required Widget child,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF047857).withOpacity(0.12),
-                blurRadius: 30,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF047857).withOpacity(0.12),
+            blurRadius: 30,
+            offset: const Offset(0, 8),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
             children: [
-              // Header row
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withOpacity(0.1),
-                    ),
-                    child: Icon(icon, size: 20, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-                ],
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.1),
+                ),
+                child: Icon(icon, size: 20, color: AppColors.primary),
               ),
-              const SizedBox(height: 16),
-              child,
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          child,
+        ],
       ),
     );
   }
@@ -329,63 +333,61 @@ class AboutPage extends StatelessWidget {
 
   // ─── DISCLAIMER CARD ──────────────────────────────────────
   Widget _buildDisclaimerCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFF59E0B).withOpacity(0.15),
-                blurRadius: 30,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withOpacity(0.15),
+            blurRadius: 30,
+            offset: const Offset(0, 8),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.warning.withOpacity(0.2),
-                    ),
-                    child: const Icon(Icons.shield_outlined, size: 20, color: AppColors.warning),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Penafian',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-                ],
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.warning.withOpacity(0.2),
+                ),
+                child: const Icon(
+                  Icons.shield_outlined,
+                  size: 20,
+                  color: AppColors.warning,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(width: 12),
               const Text(
-                'Aplikasi ini bukan pengganti diagnosis medis profesional. Pengguna disarankan untuk berkonsultasi dengan penyedia layanan kesehatan untuk pemeriksaan dan perawatan yang akurat.',
+                'Penafian',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.foreground,
-                  height: 1.625,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          const Text(
+            'Aplikasi ini bukan pengganti diagnosis medis profesional. Pengguna disarankan untuk berkonsultasi dengan penyedia layanan kesehatan untuk pemeriksaan dan perawatan yang akurat.',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.foreground,
+              height: 1.625,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -469,11 +471,7 @@ class AboutPage extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size / 2,
-          ),
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
         ],
       ),
     );

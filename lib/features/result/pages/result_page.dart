@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/guest_assessment_service.dart';
+import '../../../core/services/assessment_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/widgets/home_header.dart';
@@ -13,26 +13,20 @@ enum RiskLevel { low, medium, high }
 
 class ResultPage extends StatefulWidget {
   const ResultPage({super.key});
-
   @override
   State<ResultPage> createState() => _ResultPageState();
 }
 
 class _ResultPageState extends State<ResultPage> {
-  // --- Quick Check mode ---
   RiskLevel _currentRisk = RiskLevel.low;
   int _percentage = 0;
   Map<String, dynamic>? _assessmentData;
-
-  // --- Full Assessment mode ---
   bool _isFullAssessment = false;
   Map<String, dynamic>? _fullResultData;
-
-  // --- Common ---
   bool _isGuest = true;
   String? _userName;
+  String? _profilePicture;
   bool _loaded = false;
-
   bool _argumentsLoaded = false;
 
   @override
@@ -64,7 +58,6 @@ class _ResultPageState extends State<ResultPage> {
           _assessmentData = raw['assessmentData'] as Map<String, dynamic>?;
         }
       } else {
-        // Fallback: load from local storage (guest quick check)
         final saved = await GuestAssessmentService.get();
         if (saved != null) {
           _currentRisk = _parseRisk(saved['riskLevel'] as String?);
@@ -72,12 +65,12 @@ class _ResultPageState extends State<ResultPage> {
           _assessmentData = saved;
         }
       }
-
       final user = await StorageService.getUser();
       if (!mounted) return;
       setState(() {
         _isGuest = user == null;
         _userName = user?.fullName;
+        _profilePicture = user?.profilePicture;
         _loaded = true;
       });
     } catch (_) {
@@ -96,38 +89,117 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
+  Future<void> _openSymptomInsight(Color mainColor, IconData riskIcon) async {
+    Map<String, dynamic>? detail;
+    if (_isGuest && _assessmentData != null) {
+      try {
+        final config = await AssessmentApiService.fetchQuickCheckConfig();
+        final symptoms =
+            _assessmentData!['symptoms'] as Map<String, dynamic>? ?? {};
+        final Map<int, List<Map<String, dynamic>>> byTbType = {};
+        for (final q in config.questions) {
+          final selected =
+              (symptoms[q.symptomId.toString()] == true) ||
+              (symptoms[q.symptomId] == true);
+          if (!selected) continue;
+          byTbType.putIfAbsent(q.tbTypeId, () => []).add({
+            'symptomName': q.symptomName,
+            'symptomDescription': q.symptomDescription ?? '',
+            'cfValue': 1.0,
+          });
+        }
+        if (byTbType.isNotEmpty) {
+          final items = <Map<String, dynamic>>[];
+          for (final entry in byTbType.entries) {
+            items.add({
+              'primaryTbTypeName':
+                  config.questions
+                      .firstWhere(
+                        (q) => q.tbTypeId == entry.key,
+                        orElse: () => config.questions.first,
+                      )
+                      .tbTypeName ??
+                  'Unknown',
+              'totalScore': _percentage,
+              'riskLevelTitle':
+                  _assessmentData!['riskTitle'] ?? 'Risiko Rendah',
+              'riskLevelCode': _assessmentData!['riskCode'] ?? 'LOW',
+              'selectedSymptoms': entry.value,
+              'scoreBreakdown': {
+                'results': [
+                  {
+                    'riskLevel': {
+                      'recommendation': _assessmentData!['description'] ?? '',
+                    },
+                  },
+                ],
+              },
+            });
+          }
+          detail = {
+            'items': items,
+            'createdAt': DateTime.now().toIso8601String(),
+            'assessmentTypeName': 'Quick Assessment',
+          };
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    Navigator.pushNamed(
+      context,
+      AppRoutes.historyDetail,
+      arguments: {
+        'sessionKey': '',
+        'date': 'Sekarang',
+        'riskLevel': _assessmentData?['riskTitle'] ?? 'Risiko Rendah',
+        'riskLevelCode': _assessmentData?['riskCode'] ?? 'LOW',
+        'percentage': '$_percentage%',
+        'tbType': '',
+        'type': 'Cek Cepat',
+        'color': mainColor,
+        'icon': riskIcon,
+        if (detail != null) 'detailData': detail,
+      },
+    );
+  }
+
   Map<String, dynamic> _getRiskData() {
-    // Prefer DB-fetched values from assessmentData, fallback to sensible defaults
     final dbTitle = _assessmentData?['riskTitle'] as String?;
     final dbDescription = _assessmentData?['description'] as String?;
-
     String title;
     String subtitle;
     String description;
     Color color;
     IconData icon;
-
     switch (_currentRisk) {
       case RiskLevel.low:
         title = dbTitle ?? 'Low Risk';
         subtitle = 'Anda menunjukkan indikasi rendah TBC';
-        description = dbDescription ?? 'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.';
+        description =
+            dbDescription ??
+            'Gejala Anda saat ini tidak secara kuat mengindikasikan TBC. Jaga kesehatan dan pantau kondisi Anda.';
         color = AppColors.primary;
         icon = Icons.check_circle_outline;
+        break;
       case RiskLevel.medium:
         title = dbTitle ?? 'Medium Risk';
         subtitle = 'Beberapa gejala memerlukan perhatian';
-        description = dbDescription ?? 'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.';
+        description =
+            dbDescription ??
+            'Anda menunjukkan beberapa gejala terkait TBC. Disarankan untuk melanjutkan dengan pemeriksaan yang lebih detail.';
         color = AppColors.warning;
         icon = Icons.info_outline;
+        break;
       case RiskLevel.high:
         title = dbTitle ?? 'High Risk';
         subtitle = 'Indikasi kuat gejala TBC';
-        description = dbDescription ?? 'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.';
+        description =
+            dbDescription ??
+            'Gejala Anda sangat mengindikasikan potensi TBC. Silakan lanjutkan dengan pemeriksaan lengkap dan cari bantuan medis.';
         color = AppColors.destructive;
         icon = Icons.report_problem_outlined;
+        break;
     }
-
     return {
       'percentage': _percentage,
       'title': title,
@@ -141,110 +213,21 @@ class _ResultPageState extends State<ResultPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) {
+    if (!_loaded)
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(child: CircularProgressIndicator()),
       );
-    }
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // For full assessment, use a neutral aura
-    final auraColor = _isFullAssessment
-        ? AppColors.primary.withOpacity(0.08)
-        : (_getRiskData()['auraColor'] as Color);
-
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          _buildScatteredAuras(screenWidth, screenHeight, auraColor),
-          if (_isFullAssessment)
-            // Full assessment: needs Expanded+ListView, so use a bounded Column
-            SafeArea(
-              child: Column(
-                children: [
-                  HomeHeader(isGuest: _isGuest, userName: _userName),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Hasil Pemeriksaan Lengkap',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.foreground,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Analisis risiko TBC menyeluruh Anda di semua kategori.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.mutedForeground,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      child: _buildFullResultList(),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            // Quick check: card hugs its content, page scrolls if needed
-            SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    HomeHeader(isGuest: _isGuest, userName: _userName),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Hasil Skrining',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.foreground,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Berdasarkan jawaban Anda, berikut adalah penilaian risiko Anda.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.mutedForeground,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      child: _buildResultCard(_getRiskData()),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          _buildScatteredAuras(sw, sh),
+          _isFullAssessment && _fullResultData != null
+              ? _buildFullResultView()
+              : _buildQuickResultView(),
         ],
       ),
       bottomNavigationBar: _isGuest
@@ -252,459 +235,465 @@ class _ResultPageState extends State<ResultPage> {
           : AppBottomNav(
               currentIndex: 0,
               onTap: (i) {
-                final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
-                if (i < routes.length) {
+                final routes = [
+                  AppRoutes.home,
+                  AppRoutes.history,
+                  AppRoutes.profile,
+                ];
+                if (i < routes.length)
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     routes[i],
                     (route) => false,
                     arguments: {'isGuest': _isGuest},
                   );
-                }
               },
             ),
     );
   }
 
-  // ─── FULL ASSESSMENT MULTI-CATEGORY RESULT ────────────────
-  Widget _buildFullResultList() {
-    if (_fullResultData == null) {
-      return const Center(child: Text('Data hasil tidak ditemukan.'));
-    }
-
-    final rawResults = _fullResultData!['results'] as List<dynamic>? ?? [];
-    final resultsList = rawResults
-        .whereType<Map>()
-        .map((m) => m.cast<String, dynamic>())
-        .toList();
-
-    int riskRank(String? code) {
-      final c = (code ?? '').toUpperCase();
-      if (c.contains('HIGH')) return 3;
-      if (c.contains('MEDIUM') || c.contains('MODERATE')) return 2;
-      return 1;
-    }
-
-    resultsList.sort((a, b) {
-      final aRisk = a['riskLevel'] as Map<String, dynamic>?;
-      final bRisk = b['riskLevel'] as Map<String, dynamic>?;
-      final aRank = riskRank(aRisk?['code'] as String?);
-      final bRank = riskRank(bRisk?['code'] as String?);
-      if (aRank != bRank) return bRank.compareTo(aRank);
-
-      final aScore = (a['totalScore'] as num?)?.toDouble() ?? 0.0;
-      final bScore = (b['totalScore'] as num?)?.toDouble() ?? 0.0;
-      return bScore.compareTo(aScore);
-    });
-
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            itemCount: resultsList.length,
-            itemBuilder: (context, index) {
-              final item = resultsList[index];
-              final tbTypeName = item['tbTypeName'] as String? ?? 'Tidak Diketahui';
-              final totalScore = (item['totalScore'] as num?)?.toDouble() ?? 0.0;
-              final scorePercent = totalScore.round();
-              final riskLevelMap = item['riskLevel'] as Map<String, dynamic>?;
-              final riskTitle = riskLevelMap?['title'] as String? ?? 'Risiko Rendah';
-              final riskCode = (riskLevelMap?['code'] as String? ?? 'LOW').toUpperCase();
-              final recommendation = riskLevelMap?['recommendation'] as String? ?? '';
-              final symptomDetails = item['symptomDetails'] as List<dynamic>? ?? [];
-
-              // Only show symptoms where the user answered yes (cfValue > 0)
-              final positiveSymptoms = symptomDetails
-                  .where((s) => ((s['cfValue'] as num?)?.toDouble() ?? 0.0) > 0.0)
-                  .toList();
-
-              // Risk-coded colors
-              Color themeColor = AppColors.primary;
-              IconData riskIcon = Icons.check_circle_outline_rounded;
-              if (riskCode == 'HIGH') {
-                themeColor = AppColors.destructive;
-                riskIcon = Icons.error_outline_rounded;
-              } else if (riskCode == 'MEDIUM') {
-                themeColor = AppColors.warning;
-                riskIcon = Icons.warning_amber_rounded;
-              }
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.82),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: themeColor.withOpacity(0.2), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: themeColor.withOpacity(0.06),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header row: TB Type name + risk badge
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  tbTypeName,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.foreground,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: themeColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(100),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(riskIcon, color: themeColor, size: 13),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$scorePercent%',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w900,
-                                        color: themeColor,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            riskTitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: themeColor,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Score progress bar
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Stack(
-                              children: [
-                                Container(
-                                  height: 6,
-                                  width: double.infinity,
-                                  color: AppColors.muted.withOpacity(0.25),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor: (totalScore / 100).clamp(0.0, 1.0),
-                                  child: Container(
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [themeColor.withOpacity(0.7), themeColor],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Detected symptoms chips
-                          if (positiveSymptoms.isNotEmpty) ...[
-                            const Text(
-                              'GEJALA TERDETEKSI',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.mutedForeground,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: positiveSymptoms.map((s) {
-                                final name = s['symptomName'] as String? ?? '';
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 9, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: themeColor.withOpacity(0.06),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: themeColor.withOpacity(0.12)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.check_rounded,
-                                          color: themeColor, size: 11),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          name,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: themeColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 14),
-                          ] else ...[
-                            Row(
-                              children: [
-                                Icon(Icons.check_circle_outline_rounded,
-                                    color: AppColors.primary.withOpacity(0.6), size: 15),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Tidak ada gejala terdeteksi',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.mutedForeground.withOpacity(0.8),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-
-                          // Recommendation card
-                          if (recommendation.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: themeColor.withOpacity(0.04),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                    color: themeColor.withOpacity(0.08)),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(Icons.lightbulb_outline_rounded,
-                                      color: themeColor, size: 15),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      recommendation,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.foreground
-                                            .withOpacity(0.75),
-                                        height: 1.45,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context, AppRoutes.home, (route) => false),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              shadowColor: AppColors.primary.withOpacity(0.4),
-            ),
-            child: const Text(
-              'Kembali ke Beranda',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── QUICK CHECK SINGLE RESULT CARD ──────────────────────
-  Widget _buildResultCard(Map<String, dynamic> data) {
-    Color mainColor = data['color'];
-    final pct = data['percentage'] as int;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(40),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: mainColor.withOpacity(0.2)),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 140,
-                  width: 240,
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      CustomPaint(
-                        size: const Size(240, 120),
-                        painter: GaugePainter(
-                          percentage: pct / 100,
-                          color: mainColor,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$pct%',
-                              style: const TextStyle(
-                                fontSize: 44,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.foreground,
-                                height: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(data['icon'], color: mainColor, size: 28),
-                    const SizedBox(width: 10),
-                    Text(
-                      data['title'],
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.foreground,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  data['subtitle'],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: mainColor,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: mainColor.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: mainColor.withOpacity(0.1)),
-                  ),
-                  child: Text(
-                    data['description'],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+  Widget _buildQuickResultView() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  const Text(
+                    'Hasil Skrining',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.foreground,
-                      height: 1.5,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                if (_currentRisk != RiskLevel.low) ...[
-                  _buildButton(
-                    'Lanjutkan Pemeriksaan Lengkap',
-                    mainColor,
-                    Colors.white,
-                    true,
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.fullAssessment),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Berdasarkan jawaban Anda, berikut adalah penilaian risiko Anda.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedForeground,
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  _buildButton(
-                    'Cari Klinik Terdekat',
-                    Colors.transparent,
-                    mainColor,
-                    false,
-                    borderColor: mainColor.withOpacity(0.2),
-                    onPressed: () {},
-                  ),
-                  const SizedBox(height: 10),
                 ],
-                _buildButton(
-                  'Kembali ke Beranda',
-                  _currentRisk == RiskLevel.low ? Colors.white : Colors.transparent,
-                  _currentRisk == RiskLevel.low ? mainColor : AppColors.mutedForeground,
-                  false,
-                  borderColor: _currentRisk == RiskLevel.low
-                      ? mainColor.withOpacity(0.2)
-                      : AppColors.muted.withOpacity(0.3),
-                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                      context, AppRoutes.home, (route) => false),
-                ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: _buildResultCard(_getRiskData()),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildButton(String text, Color bgColor, Color textColor, bool hasShadow,
-      {Color? borderColor, VoidCallback? onPressed}) {
+  Widget _buildFullResultView() {
+    final color = _fullResultData!['results'] is List
+        ? (_getFullRiskColor())
+        : (_getRiskData()['auraColor'] as Color);
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: HomeHeader(isGuest: _isGuest, userName: _userName, profilePicture: _profilePicture),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Hasil Pemeriksaan Lengkap',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.foreground,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Hasil pemeriksaan mendetail berdasarkan gejala yang Anda pilih.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final result =
+                  (_fullResultData!['results'] as List)[index]
+                      as Map<String, dynamic>;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: _buildCategoryResultCard(result),
+              );
+            }, childCount: (_fullResultData!['results'] as List).length),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.home,
+                        (route) => false,
+                      ),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        'Kembali ke Beranda',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: AppColors.primary.withOpacity(0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getFullRiskColor() {
+    final results = _fullResultData!['results'] as List;
+    for (final r in results) {
+      if (r is Map) {
+        final rl = r['riskLevel'] as Map<String, dynamic>?;
+        if (rl?['code'] == 'HIGH') return AppColors.destructive;
+      }
+    }
+    for (final r in results) {
+      if (r is Map) {
+        final rl = r['riskLevel'] as Map<String, dynamic>?;
+        if (rl?['code'] == 'MEDIUM') return AppColors.warning;
+      }
+    }
+    return AppColors.primary;
+  }
+
+  Widget _buildCategoryResultCard(Map<String, dynamic> result) {
+    final title = result['tbTypeName'] ?? 'Unknown';
+    final score = (result['totalScore'] as num?)?.toInt() ?? 0;
+    final riskLevel = result['riskLevel'] as Map<String, dynamic>?;
+    final riskTitle = riskLevel?['title'] ?? 'Risiko Rendah';
+    final riskCode = riskLevel?['code'] ?? 'LOW';
+    Color color;
+    IconData riskIcon;
+    if (riskCode.contains('HIGH')) {
+      color = AppColors.destructive;
+      riskIcon = Icons.error_outline_rounded;
+    } else if (riskCode.contains('MEDIUM') || riskCode.contains('MODERATE')) {
+      color = AppColors.warning;
+      riskIcon = Icons.warning_amber_rounded;
+    } else {
+      color = AppColors.primary;
+      riskIcon = Icons.check_circle_outline_rounded;
+    }
+    final symptoms =
+        (result['symptomDetails'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+    final selectedSymptoms = symptoms
+        .where((s) => (s['cfValue'] as num?)?.toDouble() == 1.0)
+        .toList();
+    final containerColor = color.withOpacity(0.06);
+    return Container(
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.foreground,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$riskTitle',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '$score%',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Icon(riskIcon, color: color, size: 28),
+                ],
+              ),
+            ],
+          ),
+          if (selectedSymptoms.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Gejala dipilih (${selectedSymptoms.length})',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.mutedForeground.withOpacity(0.9),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...selectedSymptoms.map(
+              (s) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.08)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.check_rounded, color: color, size: 16),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        s['symptomName'] ?? '-',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.foreground,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard(Map<String, dynamic> data) {
+    Color mainColor = data['color'];
+    final pct = data['percentage'] as int;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(color: mainColor.withOpacity(0.2)),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 150,
+              width: 250,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  CustomPaint(
+                    size: const Size(250, 125),
+                    painter: GaugePainter(
+                      percentage: pct / 100,
+                      color: mainColor,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$pct%',
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.foreground,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(data['icon'] as IconData, color: mainColor, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  data['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.foreground,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              data['subtitle'] as String,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: mainColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: mainColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: mainColor.withOpacity(0.1)),
+              ),
+              child: Text(
+                data['description'] as String,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.foreground,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (_currentRisk != RiskLevel.low) ...[
+              _buildButton(
+                'Lanjutkan Pemeriksaan Lengkap',
+                mainColor,
+                Colors.white,
+                true,
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.fullAssessment),
+              ),
+              const SizedBox(height: 10),
+              _buildButton(
+                'Cari Klinik Terdekat',
+                Colors.transparent,
+                mainColor,
+                false,
+                borderColor: mainColor.withOpacity(0.2),
+                onPressed: () {},
+              ),
+              const SizedBox(height: 10),
+            ],
+            _buildButton(
+              'Lihat Insight Gejala',
+              Colors.transparent,
+              mainColor,
+              false,
+              borderColor: mainColor.withOpacity(0.2),
+              onPressed: () =>
+                  _openSymptomInsight(mainColor, data['icon'] as IconData),
+            ),
+            const SizedBox(height: 10),
+            _buildButton(
+              'Kembali ke Beranda',
+              _currentRisk == RiskLevel.low ? Colors.white : Colors.transparent,
+              _currentRisk == RiskLevel.low
+                  ? mainColor
+                  : AppColors.mutedForeground,
+              false,
+              borderColor: _currentRisk == RiskLevel.low
+                  ? mainColor.withOpacity(0.2)
+                  : AppColors.muted.withOpacity(0.3),
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.home,
+                (route) => false,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(
+    String text,
+    Color bgColor,
+    Color textColor,
+    bool hasShadow, {
+    Color? borderColor,
+    VoidCallback? onPressed,
+  }) {
     return Container(
       width: double.infinity,
       height: 58,
@@ -718,7 +707,7 @@ class _ResultPageState extends State<ResultPage> {
                   color: bgColor.withOpacity(0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
-                )
+                ),
               ]
             : null,
       ),
@@ -727,8 +716,9 @@ class _ResultPageState extends State<ResultPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         child: Text(
           text,
@@ -742,84 +732,69 @@ class _ResultPageState extends State<ResultPage> {
     );
   }
 
-  Widget _buildScatteredAuras(double sw, double sh, Color color) {
-    return Stack(
-      children: [
-        Positioned(
-            top: -50,
-            right: -50,
-            child: _buildAura(150, color.withOpacity(0.2))),
-        Positioned(
-            top: sh * 0.3,
-            left: -100,
-            child: _buildAura(180, color.withOpacity(0.1))),
-        Positioned(
-            bottom: 100,
-            right: 20,
-            child: _buildAura(100, AppColors.muted.withOpacity(0.2))),
-      ],
-    );
-  }
-
-  Widget _buildAura(double size, Color color) {
-    return Container(
-      width: size * 2,
-      height: size * 2,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size / 2,
-          ),
-        ],
+  Widget _buildScatteredAuras(double sw, double sh) => Stack(
+    children: [
+      Positioned(
+        top: -sw * 0.05,
+        right: -sw * 0.2,
+        child: _buildAura(200, AppColors.primary.withOpacity(0.08)),
       ),
-    );
-  }
+      Positioned(
+        top: sh * 0.25,
+        left: -sw * 0.15,
+        child: _buildAura(175, AppColors.secondary.withOpacity(0.05)),
+      ),
+    ],
+  );
+
+  Widget _buildAura(double size, Color color) => Container(
+    width: size * 2,
+    height: size * 2,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
+      ],
+    ),
+  );
 }
 
-// ─── GAUGE PAINTER ─────────────────────────────────────────
 class GaugePainter extends CustomPainter {
   final double percentage;
   final Color color;
-
   GaugePainter({required this.percentage, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height);
-    final radius = math.min(size.width / 2, size.height) - 10;
-    const startAngle = math.pi;
-    const sweepAngle = math.pi;
-
-    final bgPaint = Paint()
-      ..color = AppColors.muted.withOpacity(0.5)
+    final radius = size.width / 2;
+    final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round;
-
-    final progressPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
+    paint.color = color.withOpacity(0.15);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      sweepAngle,
+      math.pi,
+      math.pi,
       false,
-      bgPaint,
+      paint,
     );
-
+    paint.color = color;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      sweepAngle * percentage,
+      math.pi,
+      math.pi * percentage.clamp(0.0, 1.0),
       false,
-      progressPaint,
+      paint,
     );
+    final angle = math.pi + math.pi * percentage.clamp(0.0, 1.0);
+    final dot = Offset(
+      center.dx + radius * math.cos(angle),
+      center.dy + radius * math.sin(angle),
+    );
+    canvas.drawCircle(dot, 7, Paint()..color = Colors.white);
+    canvas.drawCircle(dot, 5, Paint()..color = color);
   }
 
   @override

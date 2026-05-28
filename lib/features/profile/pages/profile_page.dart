@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
@@ -10,7 +9,6 @@ import '../../../core/widgets/home_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
-
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
@@ -19,7 +17,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isGuest = true;
   String? _userName;
   String? _userEmail;
-
+  String? _profilePicture;
   bool _argumentsLoaded = false;
 
   @override
@@ -28,11 +26,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!_argumentsLoaded) {
       _argumentsLoaded = true;
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map) {
-        if (args.containsKey('isGuest')) {
-          _isGuest = args['isGuest'] as bool;
-        }
-      }
+      if (args is Map && args.containsKey('isGuest'))
+        _isGuest = args['isGuest'] as bool;
     }
   }
 
@@ -50,112 +45,87 @@ class _ProfilePageState extends State<ProfilePage> {
       _isGuest = user == null || !tokens;
       _userName = user?.fullName;
       _userEmail = user?.email;
+      _profilePicture = user?.profilePicture;
     });
-
     if (user != null && tokens) {
       try {
         final updatedUser = await AuthApiService.fetchCurrentUser();
-        if (mounted && (updatedUser.fullName != _userName || updatedUser.email != _userEmail)) {
+        if (mounted) {
           setState(() {
             _userName = updatedUser.fullName;
             _userEmail = updatedUser.email;
+            _profilePicture = updatedUser.profilePicture;
           });
         }
-      } catch (e) {
-        // Silently fail background sync (e.g. if offline)
-      }
+      } catch (_) {}
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background Auras
-          _buildScatteredAuras(screenWidth, screenHeight),
-
-          // Main Content
+          _buildScatteredAuras(sw, sh),
           SafeArea(
             child: Column(
               children: [
-                // Header
                 HomeHeader(
                   isGuest: _isGuest,
                   userName: _userName,
                   showProfile: false,
                 ),
-
-                // Scrollable Content
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Profile Card
                         _isGuest ? _buildGuestCard(context) : _buildUserCard(),
-                        const SizedBox(height: 28),
-
-                        // General Section Title
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            'Umum',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.foreground,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Menu Items
-                        _buildMenuItem(
-                          context,
-                          icon: Icons.info_outline_rounded,
-                          label: 'Tentang Aplikasi Ini',
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.about),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Logged-in specific menu items
+                        const SizedBox(height: 24),
                         if (!_isGuest) ...[
+                          _buildSectionTitle('Akun'),
+                          const SizedBox(height: 12),
                           _buildMenuItem(
                             context,
                             icon: Icons.edit_outlined,
                             label: 'Edit Profil',
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
+                            onTap: () async {
+                              await Navigator.pushNamed(context, AppRoutes.editProfile);
+                              if (mounted) _loadUser();
+                            },
                           ),
                           const SizedBox(height: 12),
                           _buildMenuItem(
                             context,
                             icon: Icons.lock_outline_rounded,
                             label: 'Ganti Kata Sandi',
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.changePassword),
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.changePassword,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          _buildMenuItem(
-                            context,
-                            icon: Icons.logout_rounded,
-                            label: 'Keluar',
-                            onTap: () async {
-                              await StorageService.clear();
-                              if (!mounted) return;
-                              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.cover, (route) => false);
-                            },
-                          ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 32),
                         ],
-
-                        // Warning Banner
+                        if (!_isGuest) ...[
+                          _buildSectionTitle('Lainnya'),
+                          const SizedBox(height: 12),
+                        ],
+                        _buildMenuItem(
+                          context,
+                          icon: Icons.info_outline_rounded,
+                          label: 'Tentang Aplikasi Ini',
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.about),
+                        ),
+                        const SizedBox(height: 32),
+                        if (!_isGuest) ...[
+                          _buildLogoutButton(context),
+                          const SizedBox(height: 32),
+                        ],
                         if (_isGuest) _buildWarningBanner(),
                       ],
                     ),
@@ -171,247 +141,294 @@ class _ProfilePageState extends State<ProfilePage> {
           : AppBottomNav(
               currentIndex: 2,
               onTap: (i) {
-                final routes = [AppRoutes.home, AppRoutes.history, AppRoutes.profile];
-                if (i < routes.length) {
+                final routes = [
+                  AppRoutes.home,
+                  AppRoutes.history,
+                  AppRoutes.profile,
+                ];
+                if (i < routes.length)
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     routes[i],
                     (route) => false,
                     arguments: {'isGuest': _isGuest},
                   );
-                }
               },
             ),
     );
   }
 
-
-
-  // ─── GUEST CARD ───────────────────────────────────────────
-  Widget _buildGuestCard(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.muted.withOpacity(0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.08),
-                blurRadius: 40,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Content
-              Column(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.muted.withOpacity(0.4),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.5),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.person_outline_rounded,
-                      size: 48,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Title
-                  Text(
-                    'Anda menggunakan aplikasi sebagai tamu',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.foreground,
-                      letterSpacing: -0.5,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Description
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Masuk untuk menyimpan data pemeriksaan Anda dengan aman dan mengakses fitur lengkap di semua perangkat Anda.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.mutedForeground,
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Login Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.accent],
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.5),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRoutes.login);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Text(
-                          'Masuk / Daftar',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+  Widget _buildSectionTitle(String text) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: AppColors.foreground,
+        letterSpacing: -0.3,
       ),
-    );
-  }
+    ),
+  );
 
-  // ─── USER CARD (LOGGED IN) ────────────────────────────────
-  Widget _buildUserCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.08),
-                blurRadius: 40,
-                offset: const Offset(0, 12),
-              ),
-            ],
+  Widget _buildGuestCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.muted.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 40,
+            offset: const Offset(0, 12),
           ),
-          child: Column(
+        ],
+      ),
+      child: Stack(
+        children: [
+          Column(
             children: [
-              // Avatar
               Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.secondary],
-                  ),
+                  color: AppColors.muted.withOpacity(0.4),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.5),
-                    width: 3,
+                    width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    (_userName ?? _userEmail ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  size: 48,
+                  color: AppColors.mutedForeground,
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Name
               Text(
-                _userName ?? 'Pengguna',
+                'Anda menggunakan aplikasi sebagai tamu',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: AppColors.foreground,
                   letterSpacing: -0.5,
+                  height: 1.3,
                 ),
               ),
-              const SizedBox(height: 6),
-
-              // Email
-              if (_userEmail != null)
-                Text(
-                  _userEmail!,
-                  style: const TextStyle(
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Masuk untuk menyimpan data pemeriksaan Anda dengan aman dan mengakses fitur lengkap di semua perangkat Anda.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColors.mutedForeground,
+                    height: 1.6,
                   ),
                 ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.accent],
+                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.5),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.login),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text(
+                      'Masuk / Daftar',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 40,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: _profilePicture != null && _profilePicture!.isNotEmpty
+                  ? null
+                  : const LinearGradient(
+                      colors: [AppColors.primary, AppColors.secondary],
+                    ),
+              image: _profilePicture != null && _profilePicture!.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(_profilePicture!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.5),
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: (_profilePicture != null && _profilePicture!.isNotEmpty)
+                ? null
+                : Center(
+                    child: Text(
+                      (_userName ?? _userEmail ?? 'U')[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            _userName ?? 'Pengguna',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: AppColors.foreground,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (_userEmail != null)
+            Text(
+              _userEmail!,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.mutedForeground,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        await StorageService.clear();
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.cover,
+          (route) => false,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444).withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFEF4444).withOpacity(0.15),
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                size: 22,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Keluar',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFEF4444),
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: const Color(0xFFEF4444).withOpacity(0.5),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ─── MENU ITEM ────────────────────────────────────────────
   Widget _buildMenuItem(
     BuildContext context, {
     required IconData icon,
@@ -436,7 +453,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: Row(
           children: [
-            // Icon Circle
             Container(
               width: 44,
               height: 44,
@@ -444,15 +460,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 shape: BoxShape.circle,
                 color: AppColors.primary.withOpacity(0.1),
               ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: AppColors.primary,
-              ),
+              child: Icon(icon, size: 22, color: AppColors.primary),
             ),
             const SizedBox(width: 16),
-
-            // Label
             Expanded(
               child: Text(
                 label,
@@ -464,8 +474,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-
-            // Chevron
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
@@ -477,27 +485,23 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ─── WARNING BANNER ───────────────────────────────────────
   Widget _buildWarningBanner() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.warning.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.warning.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.warning_amber_rounded,
             size: 20,
             color: AppColors.warning,
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Text(
               'Data skrining Anda tidak akan disimpan secara permanen saat menggunakan mode tamu.',
               style: TextStyle(
@@ -513,38 +517,29 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ─── BACKGROUND AURAS ─────────────────────────────────────
-  Widget _buildScatteredAuras(double sw, double sh) {
-    return Stack(
-      children: [
-        Positioned(
-          top: -sw * 0.05,
-          right: -sw * 0.1,
-          child: _buildAura(175, AppColors.primary.withOpacity(0.1)),
-        ),
-        Positioned(
-          top: sh * 0.3,
-          left: -sw * 0.2,
-          child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAura(double size, Color color) {
-    return Container(
-      width: size * 2,
-      height: size * 2,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size / 2,
-          ),
-        ],
+  Widget _buildScatteredAuras(double sw, double sh) => Stack(
+    children: [
+      Positioned(
+        top: -sw * 0.05,
+        right: -sw * 0.1,
+        child: _buildAura(175, AppColors.primary.withOpacity(0.1)),
       ),
-    );
-  }
+      Positioned(
+        top: sh * 0.3,
+        left: -sw * 0.2,
+        child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
+      ),
+    ],
+  );
+
+  Widget _buildAura(double size, Color color) => Container(
+    width: size * 2,
+    height: size * 2,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(color: color, blurRadius: size, spreadRadius: size / 2),
+      ],
+    ),
+  );
 }

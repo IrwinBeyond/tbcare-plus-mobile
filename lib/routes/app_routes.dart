@@ -14,7 +14,8 @@ import '../features/profile/pages/change_password_page.dart';
 import '../features/about/pages/about_page.dart';
 
 class AppRoutes {
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   static const String cover = '/';
   static const String login = '/login';
@@ -40,8 +41,10 @@ class AppRoutes {
     result: (context) => const ResultPage(),
     history: (context) => const HistoryPage(),
     historyDetail: (context) {
-      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-      return HistoryDetailPage(item: args);
+      final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      final detail = args['detailData'] as Map<String, dynamic>?;
+      return HistoryDetailPage(item: args, detail: detail);
     },
     profile: (context) => const ProfilePage(),
     editProfile: (context) => const EditProfilePage(),

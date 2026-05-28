@@ -18,4 +18,3 @@ class SessionService {
     _redirecting = false;
   }
 }
-

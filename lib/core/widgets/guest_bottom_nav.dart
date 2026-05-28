@@ -43,9 +43,14 @@ class GuestBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+  ) {
     bool isActive = currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () {
         if (!isActive) {
@@ -60,7 +65,9 @@ class GuestBottomNav extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+          color: isActive
+              ? AppColors.primary.withOpacity(0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -68,7 +75,9 @@ class GuestBottomNav extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
+              color: isActive
+                  ? AppColors.primary
+                  : AppColors.mutedForeground.withOpacity(0.6),
               size: 26,
             ),
             const SizedBox(height: 4),
@@ -77,7 +86,9 @@ class GuestBottomNav extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.mutedForeground.withOpacity(0.6),
+                color: isActive
+                    ? AppColors.primary
+                    : AppColors.mutedForeground.withOpacity(0.6),
               ),
             ),
           ],

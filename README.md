@@ -1,72 +1,79 @@
-# TBCare+ Mobile Application
+# TBCare+
 
-TBCare+ Mobile is a premium, beautifully crafted early-detection tuberculosis expert system app built with **Flutter**. It provides a highly responsive, modern user experience using custom theme colors, smooth transition micro-animations, glassmorphism cards, and interactive expert assessment flows.
+TBCare+ is a tuberculosis early-detection expert system mobile app built with **Flutter**. It provides symptom-based screening, certainty-factor assessment, and personalized health insights.
 
----
+## Features
 
-## ✨ Features
+- **Authentication** — Login, registration, guest mode with Supabase JWT
+- **Quick Check & Full Assessment** — Two-tier TB screening with wizard-guided forms
+- **Expert System Scoring** — Cross-TB-type certainty factor calculation
+- **Assessment History** — Session-grouped history with detailed symptom insights
+- **Profile Management** — Edit profile, change password, profile picture upload
 
-* **Complete Authentication Flows**: Fully functional Login and Registration interfaces connected directly to the ASP.NET backend.
-* **Tuberculosis Assessment Expert System**: Comprehensive diagnostic questions mapping and checking symptoms with certainty factors.
-* **Persistent Sessions**: Automatic storage of JWT authentication tokens and user profiles using `shared_preferences`.
-* **Dynamic Diagnosis History**: History detail pages featuring interactive symptom insights and visual risk calculations.
-* **Premium Glassmorphism & Scattered Aura UI**: Modern styling details following best visual design practices.
+## Tech Stack
 
----
+- **Framework**: Flutter (Dart 3.12+)
+- **Auth**: Supabase JWT
+- **HTTP**: `http` package
+- **Storage**: `shared_preferences`
+- **File Picker**: `file_picker`
 
-## 🛠️ Technology Stack
+## Getting Started
 
-* **Framework**: Flutter (Dart ^3.11.0)
-* **API Communication**: `http` package with built-in HTTP request timeout handling and exception mapping.
-* **Local Persistence**: `shared_preferences` for quick, lightweight caching of tokens and user data.
-* **Design Guidelines**: Highly responsive Material 3 components with fully customized color palettes (primary green accents, rich neutral grays, dynamic auras).
+### Prerequisites
 
----
+- Flutter SDK 3.22+
+- Android Studio or Xcode
 
-## ⚙️ Development Setup & Configuration
+### Setup
 
-### 1. Backend Endpoint Configuration
-Open `lib/core/constants/app_constants.dart` and verify the `baseUrl` configuration:
-```dart
-class AppConstants {
-  // Use '10.0.2.2' for default Android Emulator to communicate with host localhost
-  static const String baseUrl = 'http://10.0.2.2:5000';
-  
-  // Use your local network IP (e.g. 192.168.x.x) if running on physical Android/iOS devices
-  // static const String baseUrl = 'http://192.168.1.15:5000';
-}
-```
-
-### 2. Install Dependencies
-Run the package manager from the `tbcare+_mobile` directory:
 ```bash
+git clone https://github.com/rizalmaulanaairlangga/tbcare-plus-mobile.git
+cd tbcare-plus-mobile
 flutter pub get
 ```
 
-### 3. Run the App
-To start compiling and launching the app on your designated emulator or active physical device:
+### Backend Configuration
+
+Edit `lib/core/constants/app_constants.dart` to point to your backend. The default is the production Azure App Service URL. For local development, set `_useLocal = true`:
+
+```dart
+static const bool _useLocal = true; // Uses http://localhost:5181
+```
+
+### Run
+
 ```bash
 flutter run
 ```
 
----
+## Build Release
 
-## 📂 Project Architecture
+```bash
+flutter build apk --split-per-abi
+```
+
+APKs output to `build/app/outputs/flutter-apk/`.
+
+For keystore setup, see the [Flutter Android deployment guide](https://docs.flutter.dev/deployment/android).
+
+## Project Structure
 
 ```
 lib/
 ├── core/
-│   ├── constants/      # AppConstants holding REST API configurations
-│   ├── models/         # UserModel and AuthResponse JSON serializers
-│   ├── services/       # StorageService & AuthApiService wrappers
-│   ├── theme/          # Custom color tokens, text styles, and theme schemes
-│   └── widgets/        # Shared premium UI widgets
-├── features/           # Feature-based modular structure
-│   ├── auth/           # Login, registration, and cover pages
-│   ├── home/           # Home dashboard and navigation
-│   ├── assessment/     # Interactive diagnostic forms
-│   ├── result/         # Certainty factor calculation results
-│   ├── history/        # Previous assessment lists and details
-│   └── profile/        # User accounts settings and profile updates
-└── routes/             # AppRoutes and zero-delay route animations
+│   ├── constants/    # API endpoints, config
+│   ├── models/       # Data models, JSON serializers
+│   ├── services/     # Storage, auth, API services
+│   ├── theme/        # Colors, text styles, theme
+│   └── widgets/      # Shared widgets (HomeHeader, AppTopBar)
+├── features/
+│   ├── auth/         # Cover, login, register pages
+│   ├── home/         # Home dashboard
+│   ├── assessment/   # Quick check & full assessment wizards
+│   ├── result/       # Assessment results with scoring
+│   ├── history/      # History list, detail, symptom insights
+│   ├── profile/      # Profile view, edit, change password
+│   └── about/        # About & help page
+└── routes/           # Named route definitions
 ```

@@ -1,14 +1,36 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 import '../models/assessment_config_models.dart';
+import '../utils/network_exception.dart';
 import 'session_service.dart';
 import 'storage_service.dart';
 
 class AssessmentApiService {
   static Future<void> _handleUnauthorized() async {
     await SessionService.logoutAndRedirectToLogin();
-    throw Exception('Sesi login telah berakhir. Silakan login kembali.');
+    throw NetworkException(
+      'Sesi login telah berakhir. Silakan login kembali.',
+      NetworkErrorType.unauthorized,
+      statusCode: 401,
+    );
+  }
+
+  /// Throws a typed NetworkException for any non-2xx response after attempting
+  /// to extract a `message` field from the standard ApiResponse envelope.
+  static Never _throwHttpError(http.Response response, String fallback) {
+    String message = fallback;
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final m = json['message'];
+      if (m is String && m.isNotEmpty) message = m;
+    } catch (_) {}
+    final type = response.statusCode >= 500
+        ? NetworkErrorType.server
+        : NetworkErrorType.http;
+    throw NetworkException(message, type, statusCode: response.statusCode);
   }
 
   static Future<QuickCheckConfig> fetchQuickCheckConfig() async {
@@ -34,18 +56,39 @@ class AssessmentApiService {
     try {
       final response = await http
           .get(Uri.parse(AppConstants.fullAssessmentConfig))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final data = json['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          return QuickCheckConfig.fromJson(data);
-        }
+      if (response.statusCode != 200) {
+        _throwHttpError(
+          response,
+          'Gagal memuat konfigurasi pemeriksaan dari server.',
+        );
       }
-      throw Exception('Gagal memuat konfigurasi penilaian dari server.');
-    } catch (_) {
-      rethrow;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = json['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw NetworkException(
+          'Respons server tidak valid.',
+          NetworkErrorType.format,
+        );
+      }
+      return QuickCheckConfig.fromJson(data);
+    } on TimeoutException {
+      throw NetworkException(
+        'Server tidak merespons. Coba lagi sebentar.',
+        NetworkErrorType.timeout,
+      );
+    } on SocketException {
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        NetworkErrorType.offline,
+      );
+    } on FormatException {
+      throw NetworkException(
+        'Respons server tidak valid.',
+        NetworkErrorType.format,
+      );
     }
   }
 
@@ -55,46 +98,57 @@ class AssessmentApiService {
   }) async {
     final token = await StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+      throw NetworkException(
+        'Token tidak ditemukan. Silakan login kembali.',
+        NetworkErrorType.unauthorized,
+      );
     }
 
     final payload = {'assessmentTypeId': assessmentTypeId, 'answers': answers};
 
-    final response = await http
-        .post(
-          Uri.parse(AppConstants.submitAssessment),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode(payload),
-        )
-        .timeout(const Duration(seconds: 15));
+    try {
+      final response = await http
+          .post(
+            Uri.parse(AppConstants.submitAssessment),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 30));
 
-    if (response.statusCode == 401) {
-      await _handleUnauthorized();
-    }
+      if (response.statusCode == 401) {
+        await _handleUnauthorized();
+      }
 
-    if (response.statusCode != 200) {
+      if (response.statusCode != 200) {
+        _throwHttpError(response, 'Gagal menyimpan pemeriksaan.');
+      }
+
       try {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final message =
-            (json['message'] as String?) ?? 'Gagal menyimpan assessment.';
-        throw Exception('[${response.statusCode}] $message');
+        return json['data'] as Map<String, dynamic>?;
       } catch (_) {
-        final body = response.body.trim();
-        final snippet = body.length > 500 ? body.substring(0, 500) : body;
-        throw Exception(
-          '[${response.statusCode}] Gagal menyimpan assessment. Response: $snippet',
-        );
+        // Server returned 200 but malformed body — treat as success without
+        // payload. The save did succeed at the HTTP layer.
+        return null;
       }
-    }
-
-    try {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return json['data'] as Map<String, dynamic>?;
-    } catch (_) {
-      return null;
+    } on TimeoutException {
+      throw NetworkException(
+        'Server tidak merespons. Coba lagi sebentar.',
+        NetworkErrorType.timeout,
+      );
+    } on SocketException {
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        NetworkErrorType.offline,
+      );
+    } on HttpException {
+      throw NetworkException(
+        'Terjadi kesalahan jaringan. Coba lagi.',
+        NetworkErrorType.http,
+      );
     }
   }
 
@@ -128,28 +182,45 @@ class AssessmentApiService {
   static Future<List<Map<String, dynamic>>> fetchHistorySessions() async {
     final token = await StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+      throw NetworkException(
+        'Token tidak ditemukan. Silakan login kembali.',
+        NetworkErrorType.unauthorized,
+      );
     }
 
-    final response = await http
-        .get(
-          Uri.parse(AppConstants.assessmentHistorySessions),
-          headers: {'Authorization': 'Bearer $token'},
-        )
-        .timeout(const Duration(seconds: 15));
+    try {
+      final response = await http
+          .get(
+            Uri.parse(AppConstants.assessmentHistorySessions),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 401) {
-      await _handleUnauthorized();
-    }
+      if (response.statusCode == 401) await _handleUnauthorized();
 
-    if (response.statusCode == 200) {
+      if (response.statusCode != 200) {
+        _throwHttpError(response, 'Gagal memuat riwayat pemeriksaan.');
+      }
+
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final data = json['data'] as List<dynamic>?;
-      if (data != null) {
-        return data.cast<Map<String, dynamic>>();
-      }
+      return (data ?? []).cast<Map<String, dynamic>>();
+    } on TimeoutException {
+      throw NetworkException(
+        'Server tidak merespons. Coba lagi sebentar.',
+        NetworkErrorType.timeout,
+      );
+    } on SocketException {
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        NetworkErrorType.offline,
+      );
+    } on FormatException {
+      throw NetworkException(
+        'Respons server tidak valid.',
+        NetworkErrorType.format,
+      );
     }
-    return [];
   }
 
   static Future<Map<String, dynamic>?> fetchHistorySessionDetail(
@@ -157,25 +228,44 @@ class AssessmentApiService {
   ) async {
     final token = await StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+      throw NetworkException(
+        'Token tidak ditemukan. Silakan login kembali.',
+        NetworkErrorType.unauthorized,
+      );
     }
 
-    final response = await http
-        .get(
-          Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
-          headers: {'Authorization': 'Bearer $token'},
-        )
-        .timeout(const Duration(seconds: 15));
+    try {
+      final response = await http
+          .get(
+            Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 401) {
-      await _handleUnauthorized();
-    }
+      if (response.statusCode == 401) await _handleUnauthorized();
 
-    if (response.statusCode == 200) {
+      if (response.statusCode != 200) {
+        _throwHttpError(response, 'Gagal memuat detail pemeriksaan.');
+      }
+
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return json['data'] as Map<String, dynamic>?;
+    } on TimeoutException {
+      throw NetworkException(
+        'Server tidak merespons. Coba lagi sebentar.',
+        NetworkErrorType.timeout,
+      );
+    } on SocketException {
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        NetworkErrorType.offline,
+      );
+    } on FormatException {
+      throw NetworkException(
+        'Respons server tidak valid.',
+        NetworkErrorType.format,
+      );
     }
-    return null;
   }
 
   static Future<Map<String, dynamic>?> fetchHistoryDetail(int id) async {

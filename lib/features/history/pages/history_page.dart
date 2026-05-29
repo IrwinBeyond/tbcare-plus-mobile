@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/network_exception.dart';
+import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/home_header.dart';
 import '../../../core/widgets/guest_bottom_nav.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
@@ -20,6 +22,7 @@ class _HistoryPageState extends State<HistoryPage> {
   String? _profilePicture;
   List<Map<String, dynamic>> _historyItems = [];
   bool _loading = true;
+  NetworkException? _historyError;
 
   bool _argumentsLoaded = false;
 
@@ -62,6 +65,15 @@ class _HistoryPageState extends State<HistoryPage> {
       _profilePicture = user?.profilePicture;
     });
 
+    await _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _historyError = null;
+    });
     try {
       final history = await AssessmentApiService.fetchHistorySessions();
       if (!mounted) return;
@@ -71,7 +83,10 @@ class _HistoryPageState extends State<HistoryPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _historyError = NetworkException.from(e);
+        _loading = false;
+      });
     }
   }
 
@@ -113,42 +128,53 @@ class _HistoryPageState extends State<HistoryPage> {
                       StorageService.cachedUser?.profilePicture,
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Riwayat Pemeriksaan',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.foreground,
-                            letterSpacing: -1.0,
+                  child: RefreshIndicator(
+                    onRefresh: _fetchHistory,
+                    color: AppColors.primary,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Riwayat Pemeriksaan',
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.foreground,
+                              letterSpacing: -1.0,
+                            ),
                           ),
-                        ),
-                        const Text(
-                          'Hasil skrining terbaru Anda',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                          const Text(
+                            'Hasil skrining terbaru Anda',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 32),
+                          const SizedBox(height: 32),
 
-                        // Content
-                        _loading
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 60),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : _historyItems.isEmpty
-                            ? _buildEmptyState()
-                            : _buildTimelineList(),
-                      ],
+                          // Content
+                          _loading
+                              ? const Padding(
+                                  padding: EdgeInsets.only(top: 60),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : _historyError != null
+                              ? ErrorState(
+                                  message: _historyError!.userMessage,
+                                  type: _historyError!.type,
+                                  onRetry: _fetchHistory,
+                                )
+                              : _historyItems.isEmpty
+                              ? _buildEmptyState()
+                              : _buildTimelineList(),
+                        ],
+                      ),
                     ),
                   ),
                 ),

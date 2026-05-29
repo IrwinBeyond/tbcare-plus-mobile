@@ -16,7 +16,18 @@ class GuestAssessmentService {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(AppConstants.keyGuestAssessment);
     if (json == null) return null;
-    return jsonDecode(json) as Map<String, dynamic>;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map<String, dynamic>) return decoded;
+      // Wrong shape — discard corrupted entry so subsequent reads start clean.
+      await prefs.remove(AppConstants.keyGuestAssessment);
+      return null;
+    } on FormatException {
+      // Corrupted JSON (e.g., partial write, app crash mid-save, version
+      // mismatch). Drop it so the user can start a fresh assessment.
+      await prefs.remove(AppConstants.keyGuestAssessment);
+      return null;
+    }
   }
 
   static Future<void> clear() async {

@@ -43,16 +43,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUser() async {
-    final user = await StorageService.getUser();
-    final tokens = (await StorageService.getAccessToken()) != null;
+    final loggedIn = await StorageService.isLoggedIn();
+    final user = loggedIn ? await StorageService.getUser() : null;
     if (!mounted) return;
     setState(() {
-      _isGuest = user == null || !tokens;
+      _isGuest = !loggedIn;
       _userName = user?.fullName;
       _userEmail = user?.email;
       _profilePicture = user?.profilePicture;
     });
-    if (user != null && tokens) {
+    if (loggedIn && user != null) {
       try {
         final updatedUser = await AuthApiService.fetchCurrentUser();
         if (mounted) {

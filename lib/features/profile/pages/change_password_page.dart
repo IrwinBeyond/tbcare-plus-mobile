@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/auth_api_service.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/network_exception.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -52,6 +54,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     setState(() => _submitting = true);
     try {
+      // Pre-flight connectivity gate so the user gets a clear "offline" message
+      // instead of seeing a raw network exception when there's no internet.
+      final online = await ConnectivityService.isOnline();
+      if (!online) {
+        _showSnackBar(
+          'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+          AppColors.destructive,
+        );
+        return;
+      }
+
       await AuthApiService.changePassword(
         currentPassword: current,
         newPassword: newPw,
@@ -62,10 +75,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(
-        e.toString().replaceFirst('Exception: ', ''),
-        AppColors.destructive,
-      );
+      final msg = NetworkException.from(e).userMessage;
+      _showSnackBar(msg, AppColors.destructive);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

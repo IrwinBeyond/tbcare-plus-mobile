@@ -4,8 +4,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/assessment_api_service.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/guest_assessment_service.dart';
 import '../../../core/models/assessment_config_models.dart';
+import '../../../core/utils/network_exception.dart';
 
 class FullAssessmentPage extends StatefulWidget {
   const FullAssessmentPage({super.key});
@@ -181,8 +183,26 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       );
       return;
     }
+    if (_submitting) return;
     setState(() => _submitting = true);
     try {
+      // Gate 1: refuse submit while offline so we don't render a result page
+      // with no risk-level copy (the fallback config has no descriptions).
+      final online = await ConnectivityService.isOnline();
+      if (!online) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+              ),
+              backgroundColor: AppColors.destructive,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
       // Compute per-TB-type sums using applicableTbTypes for cross-type contribution
       final Map<int, double> sumByTbType = {};
       final Map<int, String> tbTypeNames = {};
@@ -286,33 +306,49 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             },
           )
           .toList();
-      if (mounted) {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.result,
-          arguments: {
-            'isFullAssessment': true,
-            'isGuest': !_isLoggedIn,
-            'result': result,
-          },
-        );
-      }
+
+      // Gate 2: logged-in users must persist to backend *before* the result
+      // page is shown. Otherwise the user sees a result that's not retrievable
+      // from history later.
       if (_isLoggedIn) {
-        Future(() async {
-          try {
-            await AssessmentApiService.submitAssessment(
-              assessmentTypeId: 2,
-              answers: answers,
+        try {
+          await AssessmentApiService.submitAssessment(
+            assessmentTypeId: 2,
+            answers: answers,
+          );
+        } catch (e) {
+          if (mounted) {
+            final msg = NetworkException.from(e).userMessage;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(msg),
+                backgroundColor: AppColors.destructive,
+                behavior: SnackBarBehavior.floating,
+              ),
             );
-          } catch (_) {}
-        });
+          }
+          return;
+        }
       }
+
+      if (!mounted) return;
+      Navigator.pushNamed(
+        context,
+        AppRoutes.result,
+        arguments: {
+          'isFullAssessment': true,
+          'isGuest': !_isLoggedIn,
+          'result': result,
+        },
+      );
     } catch (e) {
       if (mounted) {
+        final msg = NetworkException.from(e).userMessage;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Terjadi kesalahan: ${e.toString()}'),
+            content: Text(msg),
             backgroundColor: AppColors.destructive,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

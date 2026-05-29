@@ -68,10 +68,11 @@ class _ResultPageState extends State<ResultPage> {
           _assessmentData = saved;
         }
       }
-      final user = await StorageService.getUser();
+      final loggedIn = await StorageService.isLoggedIn();
+      final user = loggedIn ? await StorageService.getUser() : null;
       if (!mounted) return;
       setState(() {
-        _isGuest = user == null;
+        _isGuest = !loggedIn;
         _userName = user?.fullName;
         _profilePicture = user?.profilePicture;
         _loaded = true;

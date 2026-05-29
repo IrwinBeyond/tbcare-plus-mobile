@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
@@ -10,6 +11,15 @@ import 'session_service.dart';
 import 'storage_service.dart';
 
 class AssessmentApiService {
+  // Offline cold-start seeds captured live from the backend config endpoints.
+  // These mirror the real DB (identical question IDs, weights, and copy) so a
+  // fresh-install guest gets the same config offline as online. Re-capture
+  // these assets whenever the backend question/symptom/weight data changes.
+  static const String _quickCheckConfigAsset =
+      'assets/config/quick_check_config.json';
+  static const String _fullAssessmentConfigAsset =
+      'assets/config/full_assessment_config.json';
+
   static Future<void> _handleUnauthorized() async {
     await SessionService.logoutAndRedirectToLogin();
     throw NetworkException(
@@ -58,7 +68,7 @@ class AssessmentApiService {
     final cached = await _loadCachedConfig(
       AppConstants.keyCachedQuickCheckConfig,
     );
-    return cached ?? QuickCheckConfig.fallback();
+    return cached ?? await _loadBundledConfig(_quickCheckConfigAsset);
   }
 
   static Future<QuickCheckConfig> fetchFullAssessmentConfig() async {
@@ -72,7 +82,7 @@ class AssessmentApiService {
         final cached = await _loadCachedConfig(
           AppConstants.keyCachedFullAssessmentConfig,
         );
-        return cached ?? QuickCheckConfig.fullFallback();
+        return cached ?? await _loadBundledConfig(_fullAssessmentConfigAsset);
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -81,7 +91,7 @@ class AssessmentApiService {
         final cached = await _loadCachedConfig(
           AppConstants.keyCachedFullAssessmentConfig,
         );
-        return cached ?? QuickCheckConfig.fullFallback();
+        return cached ?? await _loadBundledConfig(_fullAssessmentConfigAsset);
       }
       await _saveCachedConfig(
         AppConstants.keyCachedFullAssessmentConfig,
@@ -93,8 +103,18 @@ class AssessmentApiService {
       final cached = await _loadCachedConfig(
         AppConstants.keyCachedFullAssessmentConfig,
       );
-      return cached ?? QuickCheckConfig.fullFallback();
+      return cached ?? await _loadBundledConfig(_fullAssessmentConfigAsset);
     }
+  }
+
+  /// Loads the bundled offline seed config (captured live from the backend).
+  /// This is the last-resort fallback when there is no network and no
+  /// SharedPreferences cache yet — i.e. a fresh install used offline. The
+  /// bundled asset is parsed through the same [QuickCheckConfig.fromJson] path
+  /// as a live response, so IDs/weights/copy are identical to online.
+  static Future<QuickCheckConfig> _loadBundledConfig(String assetPath) async {
+    final raw = await rootBundle.loadString(assetPath);
+    return QuickCheckConfig.fromJsonString(raw);
   }
 
   /// Persists a config JSON payload for offline reuse on next cold start.

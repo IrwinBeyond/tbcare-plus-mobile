@@ -122,30 +122,43 @@ class _ResultPageState extends State<ResultPage> {
       final symptoms =
           _assessmentData!['symptoms'] as Map<String, dynamic>? ?? {};
       final Map<int, List<Map<String, dynamic>>> byTbType = {};
+      final Map<int, String> tbTypeNames = {};
+
       for (final q in config.questions) {
         final selected = symptoms[q.symptomId.toString()] == true;
         if (!selected) continue;
-        byTbType.putIfAbsent(q.tbTypeId, () => []).add({
-          'symptomName': q.symptomName,
-          'symptomCode': q.symptomCode,
-          'symptomDescription': q.symptomDescription,
-          'cfValue': 1.0,
-          'tbTypeId': q.tbTypeId,
-        });
+
+        // Mimic backend logic: distribute to all applicable TB types
+        final targets =
+            q.applicableTbTypes.isNotEmpty
+                ? q.applicableTbTypes
+                : [
+                  TbTypeWeight(
+                    tbTypeId: q.tbTypeId,
+                    tbTypeName: q.tbTypeName ?? '',
+                    weight: q.weight,
+                  ),
+                ];
+
+        for (final t in targets) {
+          tbTypeNames[t.tbTypeId] = t.tbTypeName;
+          byTbType.putIfAbsent(t.tbTypeId, () => []).add({
+            'symptomName': q.symptomName,
+            'symptomCode': q.symptomCode,
+            'symptomDescription': q.symptomDescription,
+            'cfValue': 1.0,
+            'tbTypeId': q.tbTypeId,
+          });
+        }
       }
+
       if (byTbType.isNotEmpty) {
         final items = <Map<String, dynamic>>[];
         for (final entry in byTbType.entries) {
+          final typeId = entry.key;
           items.add({
-            'primaryTbTypeId': entry.key,
-            'primaryTbTypeName':
-                config.questions
-                    .firstWhere(
-                      (q) => q.tbTypeId == entry.key,
-                      orElse: () => config.questions.first,
-                    )
-                    .tbTypeName ??
-                'Unknown',
+            'primaryTbTypeId': typeId,
+            'primaryTbTypeName': tbTypeNames[typeId] ?? 'Unknown',
             'totalScore': _percentage,
             'riskLevelTitle': _assessmentData!['riskTitle'] ?? 'Risiko Rendah',
             'riskLevelCode': _assessmentData!['riskCode'] ?? 'LOW',

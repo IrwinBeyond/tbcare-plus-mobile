@@ -1,0 +1,201 @@
+{
+  "questions": [
+    {
+      "questionId": 8,
+      "symptomId": 1,
+      "symptomCode": "G01",
+      "symptomName": "Batuk terus-menerus dan berdahak selama tiga minggu/lebih",
+      "symptomDescription": "Batuk berdahak yang berlangsung lama dan tidak membaik dalam tiga minggu atau lebih.",
+      "questionText": "Batuk terus-menerus dan berdahak selama tiga minggu atau lebih",
+      "sortOrder": 1,
+      "isRequired": true,
+      "weight": 0.8,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "questionId": 7,
+      "symptomId": 2,
+      "symptomCode": "G02",
+      "symptomName": "Dahak bercampur darah/batuk darah",
+      "symptomDescription": "Dahak terlihat bercampur darah atau keluar darah saat batuk.",
+      "questionText": "Dahak bercampur darah atau batuk darah",
+      "sortOrder": 2,
+      "isRequired": true,
+      "weight": 0.6,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "questionId": 6,
+      "symptomId": 3,
+      "symptomCode": "G03",
+      "symptomName": "Demam yang berlangsung lama",
+      "symptomDescription": "Demam berulang atau menetap dalam waktu lama tanpa penyebab yang jelas.",
+      "questionText": "Demam yang berlangsung lama",
+      "sortOrder": 3,
+      "isRequired": true,
+      "weight": 0.6,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "questionId": 5,
+      "symptomId": 4,
+      "symptomCode": "G04",
+      "symptomName": "Sesak nafas dan nyeri dada",
+      "symptomDescription": "Napas terasa berat atau pendek, disertai rasa nyeri atau tidak nyaman di dada.",
+      "questionText": "Sesak nafas dan nyeri dada",
+      "sortOrder": 4,
+      "isRequired": true,
+      "weight": 0.6,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "questionId": 4,
+      "symptomId": 5,
+      "symptomCode": "G05",
+      "symptomName": "Penurunan nafsu makan",
+      "symptomDescription": "Keinginan makan menurun dibandingkan kondisi biasanya.",
+      "questionText": "Penurunan nafsu makan",
+      "sortOrder": 5,
+      "isRequired": true,
+      "weight": 0.8,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "questionId": 3,
+      "symptomId": 6,
+      "symptomCode": "G06",
+      "symptomName": "Penurunan berat badan",
+      "symptomDescription": "Berat badan turun tanpa sedang menjalani program diet atau penyebab yang jelas.",
+      "questionText": "Penurunan berat badan",
+      "sortOrder": 6,
+      "isRequired": true,
+      "weight": 0.8,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "questionId": 2,
+      "symptomId": 7,
+      "symptomCode": "G07",
+      "symptomName": "Rasa kurang enak badan/malaise, lemah",
+      "symptomDescription": "Tubuh terasa tidak fit, lemah, lesu, atau mudah lelah dalam aktivitas harian.",
+      "questionText": "Rasa kurang enak badan, malaise, atau lemah",
+      "sortOrder": 7,
+      "isRequired": true,
+      "weight": 0.8,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "questionId": 1,
+      "symptomId": 8,
+      "symptomCode": "G08",
+      "symptomName": "Berkeringat di malam hari walaupun tidak melakukan apa-apa",
+      "symptomDescription": "Keringat berlebih muncul pada malam hari meskipun tidak sedang beraktivitas berat.",
+      "questionText": "Berkeringat di malam hari walaupun tidak melakukan aktivitas berat",
+      "sortOrder": 8,
+      "isRequired": true,
+      "weight": 0.6,
+      "tbTypeId": 1,
+      "tbTypeName": "TBC Paru",
+      "applicableTbTypes": [
+        {
+          "tbTypeId": 1,
+          "tbTypeName": "TBC Paru",
+          "weight": 0.6
+        }
+      ]
+    }
+  ],
+  "riskLevels": [
+    {
+      "id": 1,
+      "tbTypeId": 1,
+      "tbTypeName": null,
+      "code": "low",
+      "title": "Low Risk",
+      "minScore": 0,
+      "maxScore": 58,
+      "description": "Persentase hasil berada pada rentang risiko rendah berdasarkan perhitungan certainty factor.",
+      "recommendation": "Pantau kondisi kesehatan dan lakukan pemeriksaan ulang jika gejala menetap atau memburuk."
+    },
+    {
+      "id": 2,
+      "tbTypeId": 1,
+      "tbTypeName": null,
+      "code": "medium",
+      "title": "Medium Risk",
+      "minScore": 58.01,
+      "maxScore": 73,
+      "description": "Persentase hasil berada pada rentang risiko sedang berdasarkan perhitungan certainty factor.",
+      "recommendation": "Disarankan berkonsultasi dengan tenaga kesehatan, terutama jika batuk, demam, atau berat badan turun berlangsung lama."
+    },
+    {
+      "id": 3,
+      "tbTypeId": 1,
+      "tbTypeName": null,
+      "code": "high",
+      "title": "High Risk",
+      "minScore": 73.01,
+      "maxScore": 100,
+      "description": "Persentase hasil berada pada rentang risiko tinggi berdasarkan perhitungan certainty factor.",
+      "recommendation": "Segera lakukan pemeriksaan ke fasilitas kesehatan untuk evaluasi lebih lanjut."
+    }
+  ],
+  "scoringMethod": "soft_saturation_cf",
+  "saturationK": 0.35
+}

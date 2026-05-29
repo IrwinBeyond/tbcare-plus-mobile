@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
@@ -50,20 +49,19 @@ class _HomePageState extends State<HomePage> {
   double get _combinedCF {
     if (_config == null || _answeredCount == 0) return 0;
 
-    // Use the same soft-saturation CF formula as the backend and full assessment.
-    // score = 1.0 - exp(-k * sum(weights))
+    // Mirror the backend's quick-check scoring (AssessmentController.SubmitAssessment):
+    // combinedCf = sum(selected question weights) / sum(all question weights).
+    // Quick check is single-TB-type (Paru), so each question's `weight` is the
+    // Paru weight and no cross-type fan-out is needed.
     double selectedWeight = 0;
-    _symptomStates.forEach((symptomId, selected) {
-      if (!selected) return;
-      final q = _config!.questions.firstWhere(
-        (q) => q.symptomId == symptomId,
-        orElse: () => _config!.questions.first,
-      );
-      selectedWeight += q.weight;
-    });
+    double totalWeight = 0;
+    for (final q in _config!.questions) {
+      totalWeight += q.weight;
+      if (_symptomStates[q.symptomId] == true) selectedWeight += q.weight;
+    }
 
-    final k = _config!.saturationK;
-    return 1.0 - exp(-k * selectedWeight);
+    if (totalWeight <= 0) return 0;
+    return selectedWeight / totalWeight;
   }
 
   int get _percentage => (_combinedCF * 100).round();
@@ -872,6 +870,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Opens the symptom-insight detail page. Guests reconstruct the detail purely
+  /// from their locally stored result snapshot — never by refetching a config,
+  /// whose IDs may differ from the ones used at submit time (that mismatch is
+  /// what produced phantom TB-type symptoms). Logged-in users pass a sessionKey
+  /// and HistoryDetailPage fetches the canonical detail from the backend.
   Future<void> _openSymptomInsight(
     Color color,
     String riskCode,
@@ -882,149 +885,14 @@ class _HomePageState extends State<HomePage> {
     String? sessionKey,
   }) async {
     Map<String, dynamic>? detail;
-    // Use stored result (guest) or last assessment result from cache
-    final stored = _storedResult ?? StorageService.lastAssessmentResult;
-    if (stored != null) {
-      // Handle full assessment result format (from StorageService.lastAssessmentResult)
-      if (stored['results'] is List && stored['symptoms'] == null) {
-        final results = stored['results'] as List;
-        final items = <Map<String, dynamic>>[];
-        for (final r in results) {
-          if (r is! Map) continue;
-          final symptomDetails = (r['symptomDetails'] as List<dynamic>?) ?? [];
-          final selectedSymptoms = symptomDetails
-              .where(
-                (s) => s is Map && (s['cfValue'] as num?)?.toDouble() == 1.0,
-              )
-              .map((s) {
-                final m = s as Map;
-                return {
-                  'symptomName': m['symptomName'] ?? '-',
-                  'symptomDescription': m['symptomDescription'],
-                  'cfValue': 1.0,
-                  'tbTypeId': (m['originTbTypeId'] as int?) ?? 0,
-                };
-              })
-              .toList();
-          final riskLevel = r['riskLevel'] as Map<String, dynamic>?;
-          items.add({
-            'primaryTbTypeId': r['tbTypeId'] ?? 0,
-            'primaryTbTypeName': r['tbTypeName'] ?? 'Unknown',
-            'totalScore': (r['totalScore'] as num?)?.toDouble() ?? 0,
-            'riskLevelTitle': riskLevel?['title'] ?? 'Risiko Rendah',
-            'riskLevelCode': riskLevel?['code'] ?? 'LOW',
-            'selectedSymptoms': selectedSymptoms,
-            'scoreBreakdown': {
-              'results': [
-                {
-                  'riskLevel': {
-                    'recommendation': riskLevel?['recommendation'] ?? '',
-                  },
-                },
-              ],
-            },
-          });
-        }
-        detail = {
-          'items': items,
-          'createdAt': DateTime.now().toIso8601String(),
-          'assessmentTypeName': isFullAssessment
-              ? 'Full Assessment'
-              : 'Quick Assessment',
-        };
-      } else {
-        // Handle stored result format (guest quick check / full assessment)
-        final result = stored;
-        final symptoms = result['symptoms'] as Map<String, dynamic>? ?? {};
 
-        final config = isFullAssessment
-            ? await AssessmentApiService.fetchFullAssessmentConfig()
-            : _config;
-
-        if (config != null) {
-          final Map<int, List<Map<String, dynamic>>> byTbType = {};
-          final Map<int, String> tbTypeNames = {};
-          // Collect all TB type names from applicableTbTypes
-          for (final q in config.questions) {
-            for (final tw in q.applicableTbTypes) {
-              tbTypeNames[tw.tbTypeId] = tw.tbTypeName;
-            }
-            tbTypeNames[q.tbTypeId] = q.tbTypeName ?? 'Kategori ${q.tbTypeId}';
-          }
-          for (final q in config.questions) {
-            final key = isFullAssessment
-                ? q.questionId.toString()
-                : q.symptomId.toString();
-            final selected = symptoms[key] == true;
-            if (!selected) continue;
-            final targets = q.applicableTbTypes.isNotEmpty
-                ? q.applicableTbTypes
-                : [
-                    TbTypeWeight(
-                      tbTypeId: q.tbTypeId,
-                      tbTypeName: q.tbTypeName ?? '',
-                      weight: q.weight,
-                    ),
-                  ];
-            for (final tw in targets) {
-              byTbType.putIfAbsent(tw.tbTypeId, () => []).add({
-                'symptomName': q.symptomName,
-                'symptomDescription': q.symptomDescription,
-                'cfValue': 1.0,
-                'tbTypeId': q.tbTypeId,
-              });
-            }
-          }
-
-          if (byTbType.isNotEmpty) {
-            final fullResults = result['fullResults'] as List<dynamic>?;
-            final items = <Map<String, dynamic>>[];
-            for (final entry in byTbType.entries) {
-              final tbTypeName =
-                  tbTypeNames[entry.key] ?? 'Kategori ${entry.key}';
-              // Use per-TB-type score if available (full assessment), otherwise overall score
-              double tbScore = pct.toDouble();
-              String tbRiskTitle = riskTitle;
-              String tbRiskCode = riskCode;
-              String tbRec = result['description'] ?? '';
-              if (fullResults != null) {
-                for (final fr in fullResults) {
-                  if (fr is Map && fr['tbTypeName'] == tbTypeName) {
-                    tbScore = (fr['totalScore'] as num?)?.toDouble() ?? tbScore;
-                    final frRisk = fr['riskLevel'] as Map<String, dynamic>?;
-                    tbRiskTitle = frRisk?['title'] ?? tbRiskTitle;
-                    tbRiskCode = frRisk?['code'] ?? tbRiskCode;
-                    tbRec = frRisk?['recommendation'] ?? tbRec;
-                    break;
-                  }
-                }
-              }
-              items.add({
-                'primaryTbTypeId': entry.key,
-                'primaryTbTypeName': tbTypeName,
-                'totalScore': tbScore,
-                'riskLevelTitle': tbRiskTitle,
-                'riskLevelCode': tbRiskCode,
-                'selectedSymptoms': entry.value,
-                'scoreBreakdown': {
-                  'results': [
-                    {
-                      'riskLevel': {'recommendation': tbRec},
-                    },
-                  ],
-                },
-              });
-            }
-            detail = {
-              'items': items,
-              'createdAt': DateTime.now().toIso8601String(),
-              'assessmentTypeName': isFullAssessment
-                  ? 'Full Assessment'
-                  : 'Quick Assessment',
-            };
-          }
-        }
-      } // else block
+    if (_isGuest) {
+      final stored = _storedResult;
+      if (stored != null) {
+        detail = isFullAssessment
+            ? _buildGuestFullDetail(stored, pct, riskTitle, riskCode)
+            : _buildGuestQuickDetail(stored, pct, riskTitle, riskCode);
+      }
     }
 
     if (!mounted) return;
@@ -1044,6 +912,113 @@ class _HomePageState extends State<HomePage> {
         'detailData': detail,
       },
     );
+  }
+
+  /// Builds the insight detail for a guest FULL assessment from the stored
+  /// `fullResults` snapshot (saved at submit time). One item per TB type that
+  /// received at least one selected symptom. No network/config dependency.
+  Map<String, dynamic>? _buildGuestFullDetail(
+    Map<String, dynamic> stored,
+    int pct,
+    String riskTitle,
+    String riskCode,
+  ) {
+    final results = stored['fullResults'] as List<dynamic>?;
+    if (results == null) return null;
+
+    final items = <Map<String, dynamic>>[];
+    for (final r in results) {
+      if (r is! Map) continue;
+      final rl = r['riskLevel'] as Map<String, dynamic>?;
+      final symptomDetails = (r['symptomDetails'] as List<dynamic>?) ?? [];
+      final selected = symptomDetails
+          .where(
+            (s) => s is Map && ((s['cfValue'] as num?)?.toDouble() ?? 0) > 0,
+          )
+          .map((s) {
+            final m = s as Map;
+            return {
+              'symptomName': m['symptomName'] ?? '-',
+              'symptomCode': m['symptomCode'] ?? '',
+              'symptomDescription': m['symptomDescription'],
+              'cfValue': 1.0,
+              'tbTypeId': (m['originTbTypeId'] as num?)?.toInt() ??
+                  (r['tbTypeId'] as num?)?.toInt() ??
+                  0,
+            };
+          })
+          .toList();
+      if (selected.isEmpty) continue;
+      items.add({
+        'primaryTbTypeId': (r['tbTypeId'] as num?)?.toInt() ?? 0,
+        'primaryTbTypeName': r['tbTypeName'] ?? 'Unknown',
+        'totalScore': (r['totalScore'] as num?)?.toDouble() ?? 0,
+        'riskLevelTitle': rl?['title'] ?? riskTitle,
+        'riskLevelCode': rl?['code'] ?? riskCode,
+        'selectedSymptoms': selected,
+        'scoreBreakdown': {
+          'results': [
+            {
+              'riskLevel': {'recommendation': rl?['recommendation'] ?? ''},
+            },
+          ],
+        },
+      });
+    }
+
+    return {
+      'items': items,
+      'createdAt': DateTime.now().toIso8601String(),
+      'assessmentTypeName': 'Full Assessment',
+    };
+  }
+
+  /// Builds the insight detail for a guest QUICK check from the stored symptom
+  /// map. Quick check is single-TB-type (Paru); `_config` (the faithful
+  /// bundled/real config) maps the selected symptomIds back to names/codes.
+  Map<String, dynamic>? _buildGuestQuickDetail(
+    Map<String, dynamic> stored,
+    int pct,
+    String riskTitle,
+    String riskCode,
+  ) {
+    if (_config == null) return null;
+    final symptoms = stored['symptoms'] as Map<String, dynamic>? ?? {};
+
+    final selected = <Map<String, dynamic>>[];
+    for (final q in _config!.questions) {
+      if (symptoms[q.symptomId.toString()] != true) continue;
+      selected.add({
+        'symptomName': q.symptomName,
+        'symptomCode': q.symptomCode,
+        'symptomDescription': q.symptomDescription,
+        'cfValue': 1.0,
+        'tbTypeId': q.tbTypeId,
+      });
+    }
+    if (selected.isEmpty) return null;
+
+    return {
+      'items': [
+        {
+          'primaryTbTypeId': 1,
+          'primaryTbTypeName': _config!.questions.first.tbTypeName ?? 'TBC Paru',
+          'totalScore': pct.toDouble(),
+          'riskLevelTitle': riskTitle,
+          'riskLevelCode': riskCode,
+          'selectedSymptoms': selected,
+          'scoreBreakdown': {
+            'results': [
+              {
+                'riskLevel': {'recommendation': stored['description'] ?? ''},
+              },
+            ],
+          },
+        },
+      ],
+      'createdAt': DateTime.now().toIso8601String(),
+      'assessmentTypeName': 'Quick Assessment',
+    };
   }
 
   Widget _buildClinicFinderButton(Color color) {

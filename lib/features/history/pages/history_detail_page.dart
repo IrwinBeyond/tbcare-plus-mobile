@@ -386,16 +386,17 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         .map((s) {
           final m = s as Map;
           final desc = m['symptomDescription'] as String?;
+          final rawCode = (m['symptomCode'] ?? m['code'] ?? m['symptom_code'] ?? '').toString();
+          final rawTypeId = m['tbTypeId'] ?? m['originTbTypeId'] ?? m['tb_type_id'] ?? 0;
+          
           return {
-            'name': m['symptomName'] ?? '-',
-            'code': m['symptomCode'] ?? '',
+            'name': m['symptomName'] ?? m['name'] ?? m['symptom_name'] ?? '-',
+            'code': rawCode,
             'desc': (desc != null && desc.isNotEmpty)
                 ? desc
                 : 'No description available.',
             'cfValue': m['cfValue'] ?? 0,
-            'tbTypeId': (m['tbTypeId'] is num)
-                ? (m['tbTypeId'] as num).toInt()
-                : 0,
+            'tbTypeId': (rawTypeId is num) ? rawTypeId.toInt() : int.tryParse(rawTypeId.toString()) ?? 0,
           };
         })
         .toList();

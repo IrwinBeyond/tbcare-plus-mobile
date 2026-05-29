@@ -240,6 +240,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
           symptomsByTbType.putIfAbsent(tw.tbTypeId, () => []).add({
             'symptomName': q.symptomName,
             'symptomCode': q.symptomCode,
+            'symptomDescription': q.symptomDescription,
             'cfValue': cfValue,
             'originTbTypeId': q.tbTypeId,
           });

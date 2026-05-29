@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/assessment_api_service.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/network_exception.dart';
 import '../../../core/widgets/error_state.dart';
@@ -27,7 +28,8 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   }
 
   Future<void> _loadDetail() async {
-    final sessionKey = (widget.item['sessionKey'] as String?) ?? '';
+    final requiresOnline = widget.item['requiresOnline'] == true;
+    var sessionKey = (widget.item['sessionKey'] as String?) ?? '';
 
     if (!mounted) return;
     setState(() {
@@ -35,9 +37,52 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       _loadError = null;
     });
 
-    // If a session key is available, always fetch from API so descriptions
-    // are present from first paint. Fall back to local detail on failure;
-    // surface a retryable error only when there's no local fallback at all.
+    // Authenticated views are online-required (architecture: authenticated =
+    // online-required). They must show real fetched data or a full-page handler
+    // — never a silent empty/local page. Enforce connectivity, resolve the
+    // sessionKey if missing, fetch, and surface a retryable ErrorState on any
+    // failure (the retry button re-runs this once the user reconnects).
+    if (requiresOnline) {
+      final online = await ConnectivityService.isOnline();
+      if (!mounted) return;
+      if (!online) {
+        setState(() {
+          _loadError = NetworkException(
+            'Tidak ada koneksi internet. Periksa koneksi Anda lalu coba lagi.',
+            NetworkErrorType.offline,
+          );
+          _loading = false;
+        });
+        return;
+      }
+      try {
+        if (sessionKey.isEmpty) {
+          final sessions = await AssessmentApiService.fetchHistorySessions();
+          if (sessions.isNotEmpty) {
+            sessionKey = (sessions.first['sessionKey'] as String?) ?? '';
+          }
+        }
+        final apiDetail = sessionKey.isEmpty
+            ? null
+            : await AssessmentApiService.fetchHistorySessionDetail(sessionKey);
+        if (!mounted) return;
+        setState(() {
+          _detail = apiDetail ?? widget.detail;
+          _loading = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _loadError = NetworkException.from(e);
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    // Guest / local-only path. If a session key is available, fetch from API so
+    // descriptions are present; fall back to local detail on failure, surfacing
+    // a retryable error only when there's no local fallback at all.
     if (sessionKey.isNotEmpty) {
       try {
         final apiDetail =
@@ -64,7 +109,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       return;
     }
 
-    // No session key (e.g. guest user) — use the local detail directly.
+    // No session key (guest) — use the local detail directly.
     setState(() {
       _detail = widget.detail;
       _loading = false;
@@ -386,16 +431,17 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         .map((s) {
           final m = s as Map;
           final desc = m['symptomDescription'] as String?;
+          final rawCode = (m['symptomCode'] ?? m['code'] ?? m['symptom_code'] ?? '').toString();
+          final rawTypeId = m['tbTypeId'] ?? m['originTbTypeId'] ?? m['tb_type_id'] ?? 0;
+          
           return {
-            'name': m['symptomName'] ?? '-',
-            'code': m['symptomCode'] ?? '',
+            'name': m['symptomName'] ?? m['name'] ?? m['symptom_name'] ?? '-',
+            'code': rawCode,
             'desc': (desc != null && desc.isNotEmpty)
                 ? desc
                 : 'No description available.',
             'cfValue': m['cfValue'] ?? 0,
-            'tbTypeId': (m['tbTypeId'] is num)
-                ? (m['tbTypeId'] as num).toInt()
-                : 0,
+            'tbTypeId': (rawTypeId is num) ? rawTypeId.toInt() : int.tryParse(rawTypeId.toString()) ?? 0,
           };
         })
         .toList();

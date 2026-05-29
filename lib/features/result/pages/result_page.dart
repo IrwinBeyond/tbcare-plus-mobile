@@ -96,56 +96,81 @@ class _ResultPageState extends State<ResultPage> {
   Future<void> _openSymptomInsight(Color mainColor, IconData riskIcon) async {
     if (_assessmentData == null) return;
 
+    // Authenticated: hand off to HistoryDetailPage with `requiresOnline`, which
+    // fetches the canonical session online and shows a full-page handler if
+    // offline. No local loading dialog here (avoids a spinner that could hang on
+    // an offline fetch — the original infinite-loading bug).
+    if (!_isGuest) {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.historyDetail,
+        arguments: {
+          'sessionKey': '',
+          'requiresOnline': true,
+          'date': 'Sekarang',
+          'riskLevel': _assessmentData!['riskTitle'] ?? 'Risiko Rendah',
+          'riskLevelCode': _assessmentData!['riskCode'] ?? 'LOW',
+          'percentage': '$_percentage%',
+          'tbType': '',
+          'type': 'Cek Cepat',
+          'color': mainColor,
+          'icon': riskIcon,
+          'detailData': null,
+        },
+      );
+      return;
+    }
+
+    // Guest: reconstruct locally (no network needed — the config falls back to
+    // the bundled offline asset).
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    // Fetch config (for local detail fallback) and session key (for API enrichment) in parallel
-    final results = await Future.wait([
-      AssessmentApiService.fetchQuickCheckConfig(),
-      if (!_isGuest) AssessmentApiService.fetchHistorySessions(),
-    ]);
-
-    final config = results[0] as QuickCheckConfig;
-    String sessionKey = '';
-    if (!_isGuest && results.length > 1) {
-      final sessions = results[1] as List<Map<String, dynamic>>;
-      if (sessions.isNotEmpty) {
-        sessionKey = (sessions.first['sessionKey'] as String?) ?? '';
-      }
-    }
-
     Map<String, dynamic>? detail;
     try {
+      final config = await AssessmentApiService.fetchQuickCheckConfig();
       final symptoms =
           _assessmentData!['symptoms'] as Map<String, dynamic>? ?? {};
       final Map<int, List<Map<String, dynamic>>> byTbType = {};
+      final Map<int, String> tbTypeNames = {};
+
       for (final q in config.questions) {
         final selected = symptoms[q.symptomId.toString()] == true;
         if (!selected) continue;
-        byTbType.putIfAbsent(q.tbTypeId, () => []).add({
-          'symptomName': q.symptomName,
-          'symptomCode': q.symptomCode,
-          'symptomDescription': q.symptomDescription,
-          'cfValue': 1.0,
-          'tbTypeId': q.tbTypeId,
-        });
+
+        // Mimic backend logic: distribute to all applicable TB types
+        final targets = q.applicableTbTypes.isNotEmpty
+            ? q.applicableTbTypes
+            : [
+                TbTypeWeight(
+                  tbTypeId: q.tbTypeId,
+                  tbTypeName: q.tbTypeName ?? '',
+                  weight: q.weight,
+                ),
+              ];
+
+        for (final t in targets) {
+          tbTypeNames[t.tbTypeId] = t.tbTypeName;
+          byTbType.putIfAbsent(t.tbTypeId, () => []).add({
+            'symptomName': q.symptomName,
+            'symptomCode': q.symptomCode,
+            'symptomDescription': q.symptomDescription,
+            'cfValue': 1.0,
+            'tbTypeId': q.tbTypeId,
+          });
+        }
       }
+
       if (byTbType.isNotEmpty) {
         final items = <Map<String, dynamic>>[];
         for (final entry in byTbType.entries) {
+          final typeId = entry.key;
           items.add({
-            'primaryTbTypeId': entry.key,
-            'primaryTbTypeName':
-                config.questions
-                    .firstWhere(
-                      (q) => q.tbTypeId == entry.key,
-                      orElse: () => config.questions.first,
-                    )
-                    .tbTypeName ??
-                'Unknown',
+            'primaryTbTypeId': typeId,
+            'primaryTbTypeName': tbTypeNames[typeId] ?? 'Unknown',
             'totalScore': _percentage,
             'riskLevelTitle': _assessmentData!['riskTitle'] ?? 'Risiko Rendah',
             'riskLevelCode': _assessmentData!['riskCode'] ?? 'LOW',
@@ -176,7 +201,8 @@ class _ResultPageState extends State<ResultPage> {
       context,
       AppRoutes.historyDetail,
       arguments: {
-        'sessionKey': sessionKey,
+        'sessionKey': '',
+        'requiresOnline': false,
         'date': 'Sekarang',
         'riskLevel': _assessmentData!['riskTitle'] ?? 'Risiko Rendah',
         'riskLevelCode': _assessmentData!['riskCode'] ?? 'LOW',

@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.0+2
+version: 1.2.0+3
 
 environment:
   sdk: ^3.12.0
@@ -104,3 +104,8 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    # Offline seed configs captured live from the backend
+    # (/api/v1/assessment/{quick-check,full-assessment}-config). Cold-start
+    # fallback so a fresh-install guest gets identical question IDs, weights,
+    # and text to the online config. Re-capture when the DB changes.
+    - assets/config/

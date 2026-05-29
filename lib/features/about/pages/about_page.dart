@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -126,12 +125,12 @@ class AboutPage extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -181,12 +180,12 @@ class AboutPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF047857).withOpacity(0.12),
+            color: const Color(0xFF047857).withValues(alpha: 0.12),
             blurRadius: 30,
             offset: const Offset(0, 8),
           ),
@@ -203,7 +202,7 @@ class AboutPage extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                 ),
                 child: Icon(icon, size: 20, color: AppColors.primary),
               ),
@@ -236,7 +235,7 @@ class AboutPage extends StatelessWidget {
           margin: const EdgeInsets.only(top: 2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
           ),
           child: const Icon(Icons.check, size: 12, color: AppColors.primary),
         ),
@@ -283,7 +282,7 @@ class AboutPage extends StatelessWidget {
                       border: Border.all(color: AppColors.primary, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -304,7 +303,7 @@ class AboutPage extends StatelessWidget {
                     Container(
                       width: 1,
                       height: 20,
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                     ),
                 ],
               ),
@@ -337,12 +336,12 @@ class AboutPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.1),
+        color: AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF59E0B).withOpacity(0.15),
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
             blurRadius: 30,
             offset: const Offset(0, 8),
           ),
@@ -358,7 +357,7 @@ class AboutPage extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.warning.withOpacity(0.2),
+                  color: AppColors.warning.withValues(alpha: 0.2),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
@@ -406,7 +405,7 @@ class AboutPage extends StatelessWidget {
             border: Border.all(color: Colors.white),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -448,17 +447,17 @@ class AboutPage extends StatelessWidget {
         Positioned(
           top: -sh * 0.05,
           right: -sw * 0.1,
-          child: _buildAura(175, AppColors.primary.withOpacity(0.1)),
+          child: _buildAura(175, AppColors.primary.withValues(alpha: 0.1)),
         ),
         Positioned(
           top: sh * 0.4,
           left: -sw * 0.2,
-          child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
+          child: _buildAura(150, AppColors.secondary.withValues(alpha: 0.05)),
         ),
         Positioned(
           bottom: sh * 0.1,
           right: -sw * 0.1,
-          child: _buildAura(125, AppColors.accent.withOpacity(0.05)),
+          child: _buildAura(125, AppColors.accent.withValues(alpha: 0.05)),
         ),
       ],
     );

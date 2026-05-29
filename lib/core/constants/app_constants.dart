@@ -14,8 +14,9 @@ class AppConstants {
   static final String baseUrl = () {
     if (_useLocal && kDebugMode) {
       if (kIsWeb) return _localUrl;
-      if (Platform.isAndroid && _detectAndroidEmulator())
+      if (Platform.isAndroid && _detectAndroidEmulator()) {
         return 'http://10.0.2.2:5181';
+      }
       return _localUrl;
     }
     return _prodUrl;
@@ -35,7 +36,8 @@ class AppConstants {
   // ── API Paths ────────────────────────────────────────────────────────
   static final String authRegister = '$baseUrl/api/v1/auth/register';
   static final String authLogin = '$baseUrl/api/v1/auth/login';
-  static final String authChangePassword = '$baseUrl/api/v1/auth/change-password';
+  static final String authChangePassword =
+      '$baseUrl/api/v1/auth/change-password';
   static final String usersMe = '$baseUrl/api/v1/auth/me';
   static final String usersUpdateMe = '$baseUrl/api/v1/auth/me';
   static final String quickCheckConfig =

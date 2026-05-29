@@ -24,28 +24,34 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   }
 
   Future<void> _loadDetail() async {
-    if (widget.detail != null) {
-      setState(() {
-        _detail = widget.detail;
-        _loading = false;
-      });
+    final sessionKey = (widget.item['sessionKey'] as String?) ?? '';
+
+    // If a session key is available, always fetch from API so descriptions
+    // are present from first paint. Fall back to local detail on failure.
+    if (sessionKey.isNotEmpty) {
+      try {
+        final apiDetail =
+            await AssessmentApiService.fetchHistorySessionDetail(sessionKey);
+        if (!mounted) return;
+        setState(() {
+          _detail = apiDetail ?? widget.detail;
+          _loading = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _detail = widget.detail;
+          _loading = false;
+        });
+      }
       return;
     }
 
-    try {
-      final sessionKey = (widget.item['sessionKey'] as String?) ?? '';
-      final detail = await AssessmentApiService.fetchHistorySessionDetail(
-        sessionKey,
-      );
-      if (!mounted) return;
-      setState(() {
-        _detail = detail;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-    }
+    // No session key (e.g. guest user) — use the local detail directly.
+    setState(() {
+      _detail = widget.detail;
+      _loading = false;
+    });
   }
 
   @override
@@ -166,25 +172,34 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Icon(Icons.arrow_back, color: AppColors.foreground, size: 20),
+              child: const Icon(
+                Icons.arrow_back,
+                color: AppColors.foreground,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(width: 16),
           const Expanded(
             child: Text(
               'Detail Pemeriksaan',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.foreground, letterSpacing: -0.3),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
           const SizedBox(width: 40),
@@ -198,9 +213,9 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: color.withOpacity(0.2), width: 2),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
       ),
       child: Column(
         children: [
@@ -215,7 +230,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: color.withOpacity(0.8),
+                      color: color.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -224,7 +239,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
-                      color: color.withOpacity(0.6),
+                      color: color.withValues(alpha: 0.6),
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -266,14 +281,18 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: color.withOpacity(0.6),
+                        color: color.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 20),
-              Container(width: 2, height: 60, color: color.withOpacity(0.1)),
+              Container(
+                width: 2,
+                height: 60,
+                color: color.withValues(alpha: 0.1),
+              ),
               const SizedBox(width: 20),
               Flexible(
                 child: Column(
@@ -297,7 +316,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: color.withOpacity(0.7),
+                        color: color.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -343,11 +362,16 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         )
         .map((s) {
           final m = s as Map;
+          final desc = m['symptomDescription'] as String?;
           return {
             'name': m['symptomName'] ?? '-',
-            'desc': m['symptomDescription'] ?? 'No description available.',
+            'desc': (desc != null && desc.isNotEmpty)
+                ? desc
+                : 'No description available.',
             'cfValue': m['cfValue'] ?? 0,
-            'tbTypeId': (m['tbTypeId'] is num) ? (m['tbTypeId'] as num).toInt() : 0,
+            'tbTypeId': (m['tbTypeId'] is num)
+                ? (m['tbTypeId'] as num).toInt()
+                : 0,
           };
         })
         .toList();
@@ -359,9 +383,12 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: resolvedColor.withOpacity(0.06),
+        color: resolvedColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: resolvedColor.withOpacity(0.12), width: 1.5),
+        border: Border.all(
+          color: resolvedColor.withValues(alpha: 0.12),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,11 +418,11 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$score% • $riskTitle ($riskCode)',
+                          '$riskTitle ($riskCode)',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: resolvedColor.withOpacity(0.75),
+                            color: resolvedColor.withValues(alpha: 0.75),
                           ),
                         ),
                       ],
@@ -410,7 +437,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: resolvedColor.withOpacity(0.10),
+                          color: resolvedColor.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
@@ -436,30 +463,44 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
               ),
             ),
           ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            alignment: Alignment.topCenter,
-            child: isExpanded
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (symptoms.isNotEmpty) ...[
-                          _buildSymptomGroups(symptoms, resolvedColor, currentTbTypeId),
-                        ],
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink(),
+          ClipRect(
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              alignment: Alignment.topCenter,
+              heightFactor: isExpanded ? 1.0 : 0.0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                opacity: isExpanded ? 1.0 : 0.0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (symptoms.isNotEmpty)
+                        _buildSymptomGroups(
+                          symptoms,
+                          resolvedColor,
+                          currentTbTypeId,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSymptomGroups(List<Map<String, dynamic>> symptoms, Color color, int currentTbTypeId) {
+  Widget _buildSymptomGroups(
+    List<Map<String, dynamic>> symptoms,
+    Color color,
+    int currentTbTypeId,
+  ) {
     final umum = symptoms.where((s) => (s['tbTypeId'] as int?) == 1).toList();
     final khusus = symptoms.where((s) => (s['tbTypeId'] as int?) != 1).toList();
     final isTbType1 = currentTbTypeId == 1;
@@ -468,7 +509,14 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Gejala dipilih (${symptoms.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          Text(
+            'Gejala dipilih (${symptoms.length})',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.mutedForeground.withValues(alpha: 0.9),
+            ),
+          ),
           const SizedBox(height: 10),
           ...symptoms.map((s) => _buildSymptomChip(s, color)),
         ],
@@ -479,13 +527,27 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (umum.isNotEmpty) ...[
-          Text('Gejala Umum (${umum.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          Text(
+            'Gejala Umum (${umum.length})',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.mutedForeground.withValues(alpha: 0.9),
+            ),
+          ),
           const SizedBox(height: 10),
           ...umum.map((s) => _buildSymptomChip(s, color)),
           if (khusus.isNotEmpty) const SizedBox(height: 16),
         ],
         if (khusus.isNotEmpty) ...[
-          Text('Gejala Khusus (${khusus.length})', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.mutedForeground.withOpacity(0.9))),
+          Text(
+            'Gejala Khusus (${khusus.length})',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.mutedForeground.withValues(alpha: 0.9),
+            ),
+          ),
           const SizedBox(height: 10),
           ...khusus.map((s) => _buildSymptomChip(s, color)),
         ],
@@ -494,56 +556,85 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   }
 
   Widget _buildSymptomChip(Map<String, dynamic> symptom, Color themeColor) {
-    final controller = ExpansionTileController();
+    final controller = ExpansibleController();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: themeColor.withOpacity(0.12)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.12)),
       ),
       child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              hoverColor: Colors.transparent,
-            ),
-            child: ExpansionTile(
-              controller: controller,
-              tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          leading: Container(
-            width: 48, height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [themeColor.withOpacity(0.15), themeColor.withOpacity(0.05)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.check_circle_rounded, color: themeColor, size: 24),
+        borderRadius: BorderRadius.circular(16),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
+            focusColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
+            dividerColor: Colors.transparent,
           ),
-          title: Text(
-            symptom['name'],
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.foreground),
-          ),
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                symptom['desc'],
-                style: TextStyle(fontSize: 14, color: AppColors.foreground.withOpacity(0.8), height: 1.6),
+          child: ExpansionTile(
+            controller: controller,
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            childrenPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            leading: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    themeColor.withValues(alpha: 0.15),
+                    themeColor.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: themeColor,
+                size: 24,
               ),
             ),
-          ],
+            title: Text(
+              symptom['name'],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.foreground,
+              ),
             ),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  symptom['desc'],
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.foreground.withValues(alpha: 0.8),
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 
@@ -561,7 +652,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -607,12 +698,12 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
         Positioned(
           top: -sh * 0.1,
           right: -sw * 0.2,
-          child: _buildAura(200, color.withOpacity(0.1)),
+          child: _buildAura(200, color.withValues(alpha: 0.1)),
         ),
         Positioned(
           bottom: sh * 0.1,
           left: -sw * 0.3,
-          child: _buildAura(250, color.withOpacity(0.05)),
+          child: _buildAura(250, color.withValues(alpha: 0.05)),
         ),
       ],
     );

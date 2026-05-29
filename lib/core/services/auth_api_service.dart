@@ -234,7 +234,7 @@ class AuthApiService {
     final message = json['message'] as String? ?? 'Terjadi kesalahan.';
     final errors = (json['errors'] as List?)?.cast<String>();
     final detail = errors != null && errors.isNotEmpty
-        ? '${message}\n${errors.join('\n')}'
+        ? '$message\n${errors.join('\n')}'
         : message;
 
     throw Exception(detail);

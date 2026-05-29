@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import '../../features/home/pages/home_page.dart';
-import '../../features/history/pages/history_page.dart';
-import '../../features/profile/pages/profile_page.dart';
 
 class GuestBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -20,14 +17,27 @@ class GuestBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Hero(
+      tag: 'app-bottom-nav',
+      flightShuttleBuilder:
+          (flightContext, animation, direction, fromContext, toContext) =>
+              toContext.widget,
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildContent(context),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -66,7 +76,7 @@ class GuestBottomNav extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primary.withOpacity(0.12)
+              ? AppColors.primary.withValues(alpha: 0.12)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -77,7 +87,7 @@ class GuestBottomNav extends StatelessWidget {
               icon,
               color: isActive
                   ? AppColors.primary
-                  : AppColors.mutedForeground.withOpacity(0.6),
+                  : AppColors.mutedForeground.withValues(alpha: 0.6),
               size: 26,
             ),
             const SizedBox(height: 4),
@@ -88,7 +98,7 @@ class GuestBottomNav extends StatelessWidget {
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                 color: isActive
                     ? AppColors.primary
-                    : AppColors.mutedForeground.withOpacity(0.6),
+                    : AppColors.mutedForeground.withValues(alpha: 0.6),
               ),
             ),
           ],

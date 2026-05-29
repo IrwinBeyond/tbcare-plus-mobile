@@ -20,7 +20,6 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
   bool _isCheckingAuth = true;
   bool _isLoggedIn = false;
   final Map<int, bool> _answerStates = {};
-  final Map<int, bool> _sectionExpanded = {};
   int _currentStep = 0;
   bool _submitting = false;
 
@@ -98,59 +97,65 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
         name.contains('respiratory') ||
         name.contains('lung') ||
         name.contains('dada') ||
-        name.contains('thorax'))
+        name.contains('thorax')) {
       return Icons.air_outlined;
+    }
     if (name.contains('kelenjar') ||
         name.contains('lymph') ||
-        name.contains('getah'))
+        name.contains('getah')) {
       return Icons.medication_liquid_outlined;
+    }
     if (name.contains('tulang') ||
         name.contains('bone') ||
         name.contains('skeletal') ||
         name.contains('sendi') ||
-        name.contains('joint'))
+        name.contains('joint')) {
       return Icons.accessibility_new_rounded;
+    }
     if (name.contains('otak') ||
         name.contains('brain') ||
         name.contains('saraf') ||
         name.contains('nerve') ||
-        name.contains('neuro'))
+        name.contains('neuro')) {
       return Icons.psychology_outlined;
+    }
     if (name.contains('usus') ||
         name.contains('intestine') ||
         name.contains('perut') ||
         name.contains('abdomen') ||
         name.contains('pencernaan') ||
-        name.contains('gastro'))
+        name.contains('gastro')) {
       return Icons.restaurant_outlined;
+    }
     if (name.contains('hati') ||
         name.contains('liver') ||
-        name.contains('hepar'))
+        name.contains('hepar')) {
       return Icons.favorite_border_outlined;
+    }
     if (name.contains('ginjal') ||
         name.contains('kidney') ||
         name.contains('renal') ||
-        name.contains('urinary'))
+        name.contains('urinary')) {
       return Icons.water_drop_outlined;
+    }
     if (name.contains('kulit') ||
         name.contains('skin') ||
-        name.contains('dermal'))
+        name.contains('dermal')) {
       return Icons.waves_outlined;
+    }
     if (name.contains('mata') ||
         name.contains('eye') ||
-        name.contains('ocular'))
+        name.contains('ocular')) {
       return Icons.visibility_outlined;
+    }
     if (name.contains('jantung') ||
         name.contains('heart') ||
-        name.contains('cardiac'))
+        name.contains('cardiac')) {
       return Icons.favorite_outlined;
+    }
     return Icons.coronavirus_outlined;
   }
 
-  int get _answeredInCurrentStep => _currentQuestions()
-      .where((q) => _answerStates[q.questionId] ?? false)
-      .length;
-  int get _totalInCurrentStep => _currentQuestions().length;
   int get _totalAnsweredAll => _answerStates.values.where((v) => v).length;
   int get _totalQuestionsAll => _config?.questions.length ?? 0;
 
@@ -197,10 +202,17 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
 
         final targets = q.applicableTbTypes.isNotEmpty
             ? q.applicableTbTypes
-            : [TbTypeWeight(tbTypeId: q.tbTypeId, tbTypeName: q.tbTypeName ?? '', weight: q.weight)];
+            : [
+                TbTypeWeight(
+                  tbTypeId: q.tbTypeId,
+                  tbTypeName: q.tbTypeName ?? '',
+                  weight: q.weight,
+                ),
+              ];
 
         for (final tw in targets) {
-          sumByTbType[tw.tbTypeId] = (sumByTbType[tw.tbTypeId] ?? 0) + tw.weight;
+          sumByTbType[tw.tbTypeId] =
+              (sumByTbType[tw.tbTypeId] ?? 0) + tw.weight;
           symptomsByTbType.putIfAbsent(tw.tbTypeId, () => []).add({
             'symptomName': q.symptomName,
             'cfValue': cfValue,
@@ -296,13 +308,14 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Terjadi kesalahan: ${e.toString()}'),
             backgroundColor: AppColors.destructive,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -338,7 +351,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
           ),
           if (_submitting)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
@@ -403,7 +416,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
               decoration: BoxDecoration(
                 color: isCompleted
                     ? AppColors.primary
-                    : AppColors.muted.withOpacity(0.2),
+                    : AppColors.muted.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -422,7 +435,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -435,11 +448,15 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary.withOpacity(0.6),
+                color: AppColors.primary.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(width: 8),
-            Container(width: 1, height: 14, color: AppColors.primary.withOpacity(0.2)),
+            Container(
+              width: 1,
+              height: 14,
+              color: AppColors.primary.withValues(alpha: 0.2),
+            ),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
@@ -474,83 +491,6 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
     );
   }
 
-  Widget _buildStepInfoBanner() {
-    final tbTypeId = _currentTbTypeId();
-    final title = _categoryName(tbTypeId);
-    final icon = _iconForTbType(tbTypeId);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Pilih gejala yang Anda alami',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.mutedForeground.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                '$_answeredInCurrentStep/$_totalInCurrentStep',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildWizardSectionCard(
     int tbTypeId,
     List<QuickCheckQuestion> questions,
@@ -558,12 +498,12 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
     String title,
   ) => Container(
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.85),
+      color: Colors.white.withValues(alpha: 0.85),
       borderRadius: BorderRadius.circular(24),
       border: Border.all(color: Colors.white),
       boxShadow: [
         BoxShadow(
-          color: AppColors.primary.withOpacity(0.06),
+          color: AppColors.primary.withValues(alpha: 0.06),
           blurRadius: 20,
           offset: const Offset(0, 4),
         ),
@@ -596,12 +536,12 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -633,7 +573,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
@@ -657,10 +597,10 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
   Widget _buildWizardBottomBar() => Container(
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.9),
+      color: Colors.white.withValues(alpha: 0.9),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 20,
           offset: const Offset(0, -4),
         ),
@@ -681,8 +621,8 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   foregroundColor: AppColors.mutedForeground,
                   side: BorderSide(
                     color: _isFirstStep
-                        ? AppColors.muted.withOpacity(0.3)
-                        : AppColors.primary.withOpacity(0.3),
+                        ? AppColors.muted.withValues(alpha: 0.3)
+                        : AppColors.primary.withValues(alpha: 0.3),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -716,7 +656,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 4,
-                  shadowColor: AppColors.primary.withOpacity(0.3),
+                  shadowColor: AppColors.primary.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -744,18 +684,18 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary.withOpacity(0.1)
+            ? AppColors.primary.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.3)
+              ? AppColors.primary.withValues(alpha: 0.3)
               : Colors.transparent,
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -769,8 +709,8 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             height: 36,
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.2)
-                  : AppColors.muted.withOpacity(0.4),
+                  ? AppColors.primary.withValues(alpha: 0.2)
+                  : AppColors.muted.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -797,7 +737,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
               _answerStates[questionId] = val;
             }),
             activeThumbColor: AppColors.primary,
-            activeTrackColor: AppColors.primary.withOpacity(0.3),
+            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
             inactiveThumbColor: Colors.white,
             inactiveTrackColor: AppColors.muted,
           ),
@@ -811,17 +751,17 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
       Positioned(
         top: -sw * 0.05,
         right: -sw * 0.1,
-        child: _buildAura(175, AppColors.primary.withOpacity(0.08)),
+        child: _buildAura(175, AppColors.primary.withValues(alpha: 0.08)),
       ),
       Positioned(
         top: sh * 0.3,
         left: -sw * 0.2,
-        child: _buildAura(150, AppColors.secondary.withOpacity(0.04)),
+        child: _buildAura(150, AppColors.secondary.withValues(alpha: 0.04)),
       ),
       Positioned(
         bottom: sh * 0.2,
         right: sw * 0.1,
-        child: _buildAura(125, AppColors.muted.withOpacity(0.15)),
+        child: _buildAura(125, AppColors.muted.withValues(alpha: 0.15)),
       ),
     ],
   );

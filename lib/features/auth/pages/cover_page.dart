@@ -20,6 +20,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _loginScrollController = ScrollController();
   bool _obscurePassword = true;
   bool _isLoggingIn = false;
   String? _loginError;
@@ -54,18 +55,20 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
   Future<void> _checkAuth() async {
     final loggedIn = await StorageService.isLoggedIn();
     if (!mounted) return;
-    if (loggedIn)
+    if (loggedIn) {
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.home,
         (route) => false,
       );
+    }
   }
 
   @override
   void dispose() {
     _dragController.dispose();
     _entranceController.dispose();
+    _loginScrollController.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -168,7 +171,8 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               final logoScale = 1.0 - (tD * 0.2);
               final sheetStartTop = screenHeight;
               final sheetCoverTop = screenHeight * 0.55;
-              final sheetLoginTop = (screenHeight * 0.35 - keyboardHeight).clamp(0.0, screenHeight * 0.35);
+              final sheetLoginTop = (screenHeight * 0.35 - keyboardHeight)
+                  .clamp(0.0, screenHeight * 0.35);
               final sheetPos = lerpDouble(
                 lerpDouble(sheetStartTop, sheetCoverTop, tE),
                 sheetLoginTop,
@@ -228,11 +232,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: GestureDetector(
-                      onVerticalDragUpdate: _onVerticalDragUpdate,
-                      onVerticalDragEnd: _onVerticalDragEnd,
-                      child: _buildSheetContent(tD),
-                    ),
+                    child: _buildSheetContent(tD),
                   ),
                 ],
               );
@@ -250,7 +250,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 40,
             offset: const Offset(0, -10),
           ),
@@ -258,27 +258,53 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       ),
       child: Stack(
         children: [
-          Opacity(
-            opacity: (1.0 - t * 3.0).clamp(0.0, 1.0),
-            child: SingleChildScrollView(child: _buildCoverSheetItems()),
+          // Cover content: draggable to expand, ignored when hidden
+          IgnorePointer(
+            ignoring: t > 0.3,
+            child: GestureDetector(
+              onVerticalDragUpdate: _onVerticalDragUpdate,
+              onVerticalDragEnd: _onVerticalDragEnd,
+              child: Opacity(
+                opacity: (1.0 - t * 3.0).clamp(0.0, 1.0),
+                child: SingleChildScrollView(child: _buildCoverSheetItems()),
+              ),
+            ),
           ),
+          // Login content: scrollable, ignored when hidden
           Opacity(
             opacity: (t * 3.0 - 2.0).clamp(0.0, 1.0),
             child: IgnorePointer(
-              ignoring: t < 0.8,
-              child: _buildLoginSheetItems(),
+              ignoring: t < 0.55,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (n is OverscrollNotification && n.overscroll < 0) {
+                    _dragController.value += n.overscroll / 400;
+                    if (_dragController.value <= 0.33) {
+                      _dragController.reverse();
+                    }
+                  }
+                  return false;
+                },
+                child: _buildLoginSheetItems(),
+              ),
             ),
           ),
+          // Drag handle: always available for collapse
           Align(
             alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 14),
-              child: Container(
-                width: 55,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(100),
+            child: GestureDetector(
+              onVerticalDragUpdate: _onVerticalDragUpdate,
+              onVerticalDragEnd: _onVerticalDragEnd,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 14, bottom: 8),
+                child: Container(
+                  width: 55,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
               ),
             ),
@@ -341,6 +367,8 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
 
   Widget _buildLoginSheetItems() {
     return SingleChildScrollView(
+      controller: _loginScrollController,
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
       child: Column(
         children: [
@@ -348,12 +376,12 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.92),
+              color: AppColors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(32),
               border: Border.all(color: AppColors.white),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 30,
                   offset: const Offset(0, 10),
                 ),
@@ -420,7 +448,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               onPressed: () => Navigator.pushNamed(context, AppRoutes.register),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   width: 2,
                 ),
                 shape: RoundedRectangleBorder(
@@ -447,12 +475,12 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.7),
+        color: AppColors.white.withValues(alpha: 0.7),
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.white),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -501,7 +529,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.white,
           elevation: 4,
-          shadowColor: AppColors.primary.withOpacity(0.3),
+          shadowColor: AppColors.primary.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -534,7 +562,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          backgroundColor: AppColors.primary.withOpacity(0.08),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -559,17 +587,17 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.8),
+            color: AppColors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: error != null
-                  ? AppColors.destructive.withOpacity(0.4)
-                  : AppColors.primary.withOpacity(0.2),
+                  ? AppColors.destructive.withValues(alpha: 0.4)
+                  : AppColors.primary.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
                 color: (error != null ? AppColors.destructive : Colors.black)
-                    .withOpacity(0.02),
+                    .withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -588,13 +616,13 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
               hintStyle: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: AppColors.mutedForeground.withOpacity(0.5),
+                color: AppColors.mutedForeground.withValues(alpha: 0.5),
               ),
               prefixIcon: Icon(
                 icon,
                 color: error != null
-                    ? AppColors.destructive.withOpacity(0.7)
-                    : AppColors.primary.withOpacity(0.7),
+                    ? AppColors.destructive.withValues(alpha: 0.7)
+                    : AppColors.primary.withValues(alpha: 0.7),
                 size: 20,
               ),
               suffixIcon: suffixIcon,
@@ -675,7 +703,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(52),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, 10),
           ),
@@ -698,22 +726,22 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
         Positioned(
           top: -40,
           left: -40,
-          child: _buildAura(100, AppColors.primary.withOpacity(0.08)),
+          child: _buildAura(100, AppColors.primary.withValues(alpha: 0.08)),
         ),
         Positioned(
           top: sh * 0.2,
           right: -60,
-          child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
+          child: _buildAura(80, AppColors.primary.withValues(alpha: 0.06)),
         ),
         Positioned(
           bottom: sh * 0.2,
           left: -60,
-          child: _buildAura(70, AppColors.accent.withOpacity(0.06)),
+          child: _buildAura(70, AppColors.accent.withValues(alpha: 0.06)),
         ),
         Positioned(
           top: sh * 0.5,
           left: sw * 0.4,
-          child: _buildAura(60, AppColors.primary.withOpacity(0.05)),
+          child: _buildAura(60, AppColors.primary.withValues(alpha: 0.05)),
         ),
       ],
     );

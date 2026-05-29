@@ -20,6 +20,19 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Hero(
+      tag: 'app-home-header',
+      flightShuttleBuilder:
+          (flightContext, animation, direction, fromContext, toContext) =>
+              toContext.widget,
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildContent(context),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Row(
@@ -37,7 +50,7 @@ class HomeHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -115,32 +128,51 @@ class HomeHeader extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: (!isGuest && (profilePicture == null || profilePicture!.isEmpty))
-                          ? const LinearGradient(colors: [AppColors.primary, AppColors.secondary])
+                      gradient:
+                          (!isGuest &&
+                              (profilePicture == null ||
+                                  profilePicture!.isEmpty))
+                          ? const LinearGradient(
+                              colors: [AppColors.primary, AppColors.secondary],
+                            )
                           : null,
-                      color: isGuest ? AppColors.muted.withOpacity(0.3) : null,
+                      color: isGuest ? AppColors.muted.withValues(alpha: 0.3) : null,
                       border: Border.all(color: Colors.white, width: 2),
-                      image: (!isGuest && profilePicture != null && profilePicture!.isNotEmpty)
-                          ? DecorationImage(image: _profileImage(profilePicture!), fit: BoxFit.cover)
+                      image:
+                          (!isGuest &&
+                              profilePicture != null &&
+                              profilePicture!.isNotEmpty)
+                          ? DecorationImage(
+                              image: _profileImage(profilePicture!),
+                              fit: BoxFit.cover,
+                            )
                           : null,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: isGuest
-                        ? const Icon(Icons.person_outline_rounded, color: AppColors.mutedForeground, size: 24)
+                        ? const Icon(
+                            Icons.person_outline_rounded,
+                            color: AppColors.mutedForeground,
+                            size: 24,
+                          )
                         : (profilePicture == null || profilePicture!.isEmpty)
-                            ? Center(
-                                child: Text(
-                                  (userName ?? 'U')[0].toUpperCase(),
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
-                                ),
-                              )
-                            : null,
+                        ? Center(
+                            child: Text(
+                              (userName ?? 'U')[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
                 ],
               ),

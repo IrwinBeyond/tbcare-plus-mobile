@@ -5,11 +5,9 @@ import '../models/auth_models.dart';
 
 class StorageService {
   static UserModel? _cachedUser;
-  static Map<String, dynamic>? _lastAssessmentResult;
+  static Map<String, dynamic>? lastAssessmentResult;
 
   static UserModel? get cachedUser => _cachedUser;
-  static Map<String, dynamic>? get lastAssessmentResult => _lastAssessmentResult;
-  static set lastAssessmentResult(Map<String, dynamic>? v) => _lastAssessmentResult = v;
 
   // ── Token ────────────────────────────────────────────────────────────
   static Future<void> saveTokens({

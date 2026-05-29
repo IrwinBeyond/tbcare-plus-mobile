@@ -66,7 +66,13 @@ class QuickCheckConfig {
           sortOrder: 1,
           weight: 0.15,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.15)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.15,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 2,
@@ -77,7 +83,13 @@ class QuickCheckConfig {
           sortOrder: 2,
           weight: 0.20,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.20)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.20,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 3,
@@ -88,7 +100,13 @@ class QuickCheckConfig {
           sortOrder: 3,
           weight: 0.10,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.10,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 4,
@@ -99,7 +117,13 @@ class QuickCheckConfig {
           sortOrder: 4,
           weight: 0.10,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.10,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 5,
@@ -110,7 +134,13 @@ class QuickCheckConfig {
           sortOrder: 5,
           weight: 0.15,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.15)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.15,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 6,
@@ -121,7 +151,13 @@ class QuickCheckConfig {
           sortOrder: 6,
           weight: 0.10,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.10,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 7,
@@ -132,7 +168,13 @@ class QuickCheckConfig {
           sortOrder: 7,
           weight: 0.10,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.10,
+            ),
+          ],
         ),
         QuickCheckQuestion(
           questionId: 8,
@@ -143,7 +185,13 @@ class QuickCheckConfig {
           sortOrder: 8,
           weight: 0.10,
           tbTypeId: 1,
-          applicableTbTypes: [TbTypeWeight(tbTypeId: 1, tbTypeName: 'Tuberkulosis Paru', weight: 0.10)],
+          applicableTbTypes: [
+            TbTypeWeight(
+              tbTypeId: 1,
+              tbTypeName: 'Tuberkulosis Paru',
+              weight: 0.10,
+            ),
+          ],
         ),
       ],
       riskLevels: [
@@ -244,7 +292,8 @@ class QuickCheckQuestion {
       weight: (json['weight'] as num?)?.toDouble() ?? 0,
       tbTypeId: (json['tbTypeId'] as num?)?.toInt() ?? 0,
       tbTypeName: json['tbTypeName'] as String?,
-      applicableTbTypes: (json['applicableTbTypes'] as List<dynamic>?)
+      applicableTbTypes:
+          (json['applicableTbTypes'] as List<dynamic>?)
               ?.map((e) => TbTypeWeight.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

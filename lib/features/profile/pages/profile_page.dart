@@ -20,7 +20,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _userEmail;
   String? _profilePicture;
 
-  String get _profilePicUrl => _profilePicture ?? StorageService.cachedUser?.profilePicture ?? '';
+  String get _profilePicUrl =>
+      _profilePicture ?? StorageService.cachedUser?.profilePicture ?? '';
   bool _argumentsLoaded = false;
 
   @override
@@ -29,8 +30,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!_argumentsLoaded) {
       _argumentsLoaded = true;
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map && args.containsKey('isGuest'))
+      if (args is Map && args.containsKey('isGuest')) {
         _isGuest = args['isGuest'] as bool;
+      }
     }
   }
 
@@ -97,7 +99,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.edit_outlined,
                             label: 'Edit Profil',
                             onTap: () async {
-                              await Navigator.pushNamed(context, AppRoutes.editProfile);
+                              await Navigator.pushNamed(
+                                context,
+                                AppRoutes.editProfile,
+                              );
                               if (mounted) _loadUser();
                             },
                           ),
@@ -149,13 +154,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   AppRoutes.history,
                   AppRoutes.profile,
                 ];
-                if (i < routes.length)
+                if (i < routes.length) {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     routes[i],
                     (route) => false,
                     arguments: {'isGuest': _isGuest},
                   );
+                }
               },
             ),
     );
@@ -179,12 +185,12 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.muted.withOpacity(0.5)),
+        border: Border.all(color: AppColors.muted.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, 12),
           ),
@@ -199,14 +205,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.muted.withOpacity(0.4),
+                  color: AppColors.muted.withValues(alpha: 0.4),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -254,10 +260,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     gradient: const LinearGradient(
                       colors: [AppColors.primary, AppColors.accent],
                     ),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.5),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                         blurRadius: 24,
                         offset: const Offset(0, 12),
                       ),
@@ -296,12 +302,12 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, 12),
           ),
@@ -326,12 +332,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     )
                   : null,
               border: Border.all(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 width: 3,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -341,7 +347,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? null
                 : Center(
                     child: Text(
-                      (_userName ?? _userEmail ?? StorageService.cachedUser?.fullName ?? StorageService.cachedUser?.email ?? 'U')[0].toUpperCase(),
+                      (_userName ??
+                              _userEmail ??
+                              StorageService.cachedUser?.fullName ??
+                              StorageService.cachedUser?.email ??
+                              'U')[0]
+                          .toUpperCase(),
                       style: const TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.w900,
@@ -380,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return GestureDetector(
       onTap: () async {
         await StorageService.clear();
-        if (!mounted) return;
+        if (!context.mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.cover,
@@ -390,9 +401,9 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withOpacity(0.08),
+          color: const Color(0xFFEF4444).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
@@ -401,7 +412,7 @@ class _ProfilePageState extends State<ProfilePage> {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF4444).withOpacity(0.15),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.15),
               ),
               child: const Icon(
                 Icons.logout_rounded,
@@ -424,7 +435,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: const Color(0xFFEF4444).withOpacity(0.5),
+              color: const Color(0xFFEF4444).withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -443,12 +454,12 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.8),
+          color: Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -461,7 +472,7 @@ class _ProfilePageState extends State<ProfilePage> {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
               ),
               child: Icon(icon, size: 22, color: AppColors.primary),
             ),
@@ -480,7 +491,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: AppColors.mutedForeground.withOpacity(0.5),
+              color: AppColors.mutedForeground.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -492,9 +503,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.1),
+        color: AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -525,12 +536,12 @@ class _ProfilePageState extends State<ProfilePage> {
       Positioned(
         top: -sw * 0.05,
         right: -sw * 0.1,
-        child: _buildAura(175, AppColors.primary.withOpacity(0.1)),
+        child: _buildAura(175, AppColors.primary.withValues(alpha: 0.1)),
       ),
       Positioned(
         top: sh * 0.3,
         left: -sw * 0.2,
-        child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
+        child: _buildAura(150, AppColors.secondary.withValues(alpha: 0.05)),
       ),
     ],
   );

@@ -104,12 +104,12 @@ class _LoginPageState extends State<LoginPage> {
           Positioned(
             top: -50,
             right: -50,
-            child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
+            child: _buildAura(80, AppColors.primary.withValues(alpha: 0.06)),
           ),
           Positioned(
             top: screenHeight * 0.3,
             left: -100,
-            child: _buildAura(80, AppColors.secondary.withOpacity(0.04)),
+            child: _buildAura(80, AppColors.secondary.withValues(alpha: 0.04)),
           ),
           SafeArea(
             child: Column(
@@ -129,12 +129,12 @@ class _LoginPageState extends State<LoginPage> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.white.withOpacity(0.7),
+                            color: AppColors.white.withValues(alpha: 0.7),
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.white),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -178,12 +178,12 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: AppColors.white.withOpacity(0.92),
+                            color: AppColors.white.withValues(alpha: 0.92),
                             borderRadius: BorderRadius.circular(32),
                             border: Border.all(color: AppColors.white),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 30,
                                 offset: const Offset(0, 10),
                               ),
@@ -244,8 +244,8 @@ class _LoginPageState extends State<LoginPage> {
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: AppColors.white,
                                     elevation: 4,
-                                    shadowColor: AppColors.primary.withOpacity(
-                                      0.3,
+                                    shadowColor: AppColors.primary.withValues(
+                                      alpha: 0.3,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
@@ -298,7 +298,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
-                                color: AppColors.primary.withOpacity(0.2),
+                                color: AppColors.primary.withValues(alpha: 0.2),
                                 width: 2,
                               ),
                               shape: RoundedRectangleBorder(
@@ -343,17 +343,17 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.8),
+            color: AppColors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: error != null
-                  ? AppColors.destructive.withOpacity(0.4)
-                  : AppColors.primary.withOpacity(0.2),
+                  ? AppColors.destructive.withValues(alpha: 0.4)
+                  : AppColors.primary.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
                 color: (error != null ? AppColors.destructive : Colors.black)
-                    .withOpacity(0.02),
+                    .withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -373,13 +373,13 @@ class _LoginPageState extends State<LoginPage> {
               hintStyle: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: AppColors.mutedForeground.withOpacity(0.5),
+                color: AppColors.mutedForeground.withValues(alpha: 0.5),
               ),
               prefixIcon: Icon(
                 icon,
                 color: error != null
-                    ? AppColors.destructive.withOpacity(0.7)
-                    : AppColors.primary.withOpacity(0.7),
+                    ? AppColors.destructive.withValues(alpha: 0.7)
+                    : AppColors.primary.withValues(alpha: 0.7),
                 size: 20,
               ),
               suffixIcon: suffixIcon,
@@ -491,11 +491,7 @@ class _LoginPageState extends State<LoginPage> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size,
-            spreadRadius: size * 0.4,
-          ),
+          BoxShadow(color: color, blurRadius: size, spreadRadius: size * 0.4),
         ],
       ),
     );

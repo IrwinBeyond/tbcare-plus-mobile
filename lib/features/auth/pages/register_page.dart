@@ -126,14 +126,14 @@ class _RegisterPageState extends State<RegisterPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.white.withOpacity(0.92),
+                      color: AppColors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
-                        color: AppColors.white.withOpacity(0.5),
+                        color: AppColors.white.withValues(alpha: 0.5),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 40,
                           offset: const Offset(0, 10),
                         ),
@@ -146,11 +146,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           _buildErrorBanner(_errorMessage!),
                           const SizedBox(height: 20),
                         ],
-                        _buildLabel('Nama Lengkap'),
+                        _buildLabel('Nama'),
                         const SizedBox(height: 8),
                         _buildFieldBox(
                           controller: _fullNameCtrl,
-                          hint: 'Masukkan nama lengkap Anda',
+                          hint: 'Masukkan nama Anda',
                           icon: Icons.badge_outlined,
                           textInputAction: TextInputAction.next,
                           error: _fullNameError,
@@ -224,7 +224,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 4,
-                              shadowColor: AppColors.primary.withOpacity(0.4),
+                              shadowColor: AppColors.primary.withValues(
+                                alpha: 0.4,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -273,12 +275,12 @@ class _RegisterPageState extends State<RegisterPage> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.7),
+          color: AppColors.white.withValues(alpha: 0.7),
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.white),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -309,18 +311,18 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.8),
+            color: AppColors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: error != null
-                  ? AppColors.destructive.withOpacity(0.4)
-                  : AppColors.primary.withOpacity(0.2),
+                  ? AppColors.destructive.withValues(alpha: 0.4)
+                  : AppColors.primary.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
                 color:
                     (error != null ? AppColors.destructive : AppColors.primary)
-                        .withOpacity(0.05),
+                        .withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -338,14 +340,14 @@ class _RegisterPageState extends State<RegisterPage> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: AppColors.mutedForeground.withOpacity(0.5),
+                color: AppColors.mutedForeground.withValues(alpha: 0.5),
                 fontSize: 15,
               ),
               prefixIcon: Icon(
                 icon,
                 color: error != null
-                    ? AppColors.destructive.withOpacity(0.7)
-                    : AppColors.primary.withOpacity(0.7),
+                    ? AppColors.destructive.withValues(alpha: 0.7)
+                    : AppColors.primary.withValues(alpha: 0.7),
                 size: 20,
               ),
               suffixIcon: suffixIcon,
@@ -450,17 +452,17 @@ class _RegisterPageState extends State<RegisterPage> {
         Positioned(
           top: -50,
           right: -50,
-          child: _buildAura(80, AppColors.primary.withOpacity(0.06)),
+          child: _buildAura(80, AppColors.primary.withValues(alpha: 0.06)),
         ),
         Positioned(
           top: sh * 0.3,
           left: -100,
-          child: _buildAura(80, AppColors.secondary.withOpacity(0.04)),
+          child: _buildAura(80, AppColors.secondary.withValues(alpha: 0.04)),
         ),
         Positioned(
           bottom: 100,
           right: 20,
-          child: _buildAura(60, AppColors.accent.withOpacity(0.06)),
+          child: _buildAura(60, AppColors.accent.withValues(alpha: 0.06)),
         ),
       ],
     );

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/services/storage_service.dart';
@@ -106,7 +105,13 @@ class _HistoryPageState extends State<HistoryPage> {
           SafeArea(
             child: Column(
               children: [
-                HomeHeader(isGuest: _isGuest, userName: _userName ?? StorageService.cachedUser?.fullName, profilePicture: _profilePicture ?? StorageService.cachedUser?.profilePicture),
+                HomeHeader(
+                  isGuest: _isGuest,
+                  userName: _userName ?? StorageService.cachedUser?.fullName,
+                  profilePicture:
+                      _profilePicture ??
+                      StorageService.cachedUser?.profilePicture,
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -184,7 +189,7 @@ class _HistoryPageState extends State<HistoryPage> {
             Icon(
               Icons.history_rounded,
               size: 80,
-              color: AppColors.muted.withOpacity(0.5),
+              color: AppColors.muted.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -292,7 +297,9 @@ class _HistoryPageState extends State<HistoryPage> {
                       border: Border.all(color: Colors.white, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: (item['color'] as Color).withOpacity(0.3),
+                          color: (item['color'] as Color).withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -302,7 +309,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: (item['color'] as Color).withOpacity(0.2),
+                      color: (item['color'] as Color).withValues(alpha: 0.2),
                     ),
                   ),
                 ],
@@ -337,12 +344,12 @@ class _HistoryPageState extends State<HistoryPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -360,7 +367,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   Icon(
                     Icons.calendar_today_rounded,
                     size: 13,
-                    color: AppColors.mutedForeground.withOpacity(0.7),
+                    color: AppColors.mutedForeground.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -379,7 +386,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
@@ -419,7 +426,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: color.withOpacity(0.8),
+                            color: color.withValues(alpha: 0.8),
                           ),
                         ),
                         if ((item['tbType'] as String).isNotEmpty) ...[
@@ -429,7 +436,7 @@ class _HistoryPageState extends State<HistoryPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: color.withOpacity(0.6),
+                              color: color.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -442,7 +449,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(item['icon'] as IconData, color: color, size: 22),
@@ -460,17 +467,17 @@ class _HistoryPageState extends State<HistoryPage> {
         Positioned(
           top: -sh * 0.05,
           right: -sw * 0.1,
-          child: _buildAura(175, AppColors.primary.withOpacity(0.1)),
+          child: _buildAura(175, AppColors.primary.withValues(alpha: 0.1)),
         ),
         Positioned(
           top: sh * 0.4,
           left: -sw * 0.2,
-          child: _buildAura(150, AppColors.secondary.withOpacity(0.05)),
+          child: _buildAura(150, AppColors.secondary.withValues(alpha: 0.05)),
         ),
         Positioned(
           bottom: sh * 0.1,
           right: -sw * 0.1,
-          child: _buildAura(125, AppColors.accent.withOpacity(0.05)),
+          child: _buildAura(125, AppColors.accent.withValues(alpha: 0.05)),
         ),
       ],
     );

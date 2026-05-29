@@ -1,9 +1,8 @@
-import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
 import '../../../core/services/guest_assessment_service.dart';
+import '../../../core/utils/url_utils.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/models/assessment_config_models.dart';
 import '../../../core/theme/app_colors.dart';
@@ -33,8 +32,6 @@ class _HomePageState extends State<HomePage> {
   // For logged-in users: most recent assessment data
   Map<String, dynamic>? _mostRecentAssessment;
   bool _loadingMostRecentAssessment = false;
-  bool _hasCompletedFullAssessment = false;
-  bool _isMostRecentQuickAssessment = false;
 
   int get _answeredCount => _symptomStates.values.where((v) => v).length;
 
@@ -112,16 +109,10 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final assessment = await AssessmentApiService.fetchMostRecentAssessment();
-      final hasFullAssessment =
-          await AssessmentApiService.hasCompletedFullAssessment();
-      final isMostRecentQuick =
-          await AssessmentApiService.isMostRecentQuickAssessment();
 
       if (!mounted) return;
       setState(() {
         _mostRecentAssessment = assessment;
-        _hasCompletedFullAssessment = hasFullAssessment;
-        _isMostRecentQuickAssessment = isMostRecentQuick;
         _loadingMostRecentAssessment = false;
       });
     } catch (e) {
@@ -257,9 +248,9 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         height: 300,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         ),
         child: const Center(child: CircularProgressIndicator()),
       ),
@@ -274,12 +265,12 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
@@ -354,19 +345,19 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.12)
-              : Colors.white.withOpacity(0.6),
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.3)
+                ? AppColors.primary.withValues(alpha: 0.3)
                 : Colors.white,
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: (isSelected ? AppColors.primary : AppColors.primary)
-                  .withOpacity(0.05),
+                  .withValues(alpha: 0.05),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -378,8 +369,8 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.1)
-                    : Colors.white.withOpacity(0.5),
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -408,9 +399,9 @@ class _HomePageState extends State<HomePage> {
               onChanged: (val) =>
                   setState(() => _symptomStates[q.symptomId] = val),
               activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withOpacity(0.2),
+              activeTrackColor: AppColors.primary.withValues(alpha: 0.2),
               inactiveThumbColor: Colors.white,
-              inactiveTrackColor: Colors.grey.withOpacity(0.1),
+              inactiveTrackColor: Colors.grey.withValues(alpha: 0.1),
             ),
           ],
         ),
@@ -429,12 +420,12 @@ class _HomePageState extends State<HomePage> {
         gradient: LinearGradient(
           colors: hasSelection
               ? const [AppColors.primary, AppColors.secondary]
-              : [AppColors.muted, AppColors.muted.withOpacity(0.6)],
+              : [AppColors.muted, AppColors.muted.withValues(alpha: 0.6)],
         ),
         boxShadow: hasSelection
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
+                  color: AppColors.primary.withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -546,12 +537,12 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
@@ -575,9 +566,9 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.15)),
+                border: Border.all(color: color.withValues(alpha: 0.15)),
               ),
               child: Text(
                 isFullAssessment ? 'Pemeriksaan Lengkap' : 'Cek Cepat',
@@ -657,9 +648,9 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.05),
+                color: color.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: color.withOpacity(0.1)),
+                border: Border.all(color: color.withValues(alpha: 0.1)),
               ),
               child: Text(
                 description,
@@ -687,14 +678,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
             ],
             if (riskCode.toUpperCase() != 'LOW') ...[
-              _buildResultButton(
-                'Cari Klinik Terdekat',
-                Colors.transparent,
-                color,
-                false,
-                borderColor: color.withOpacity(0.2),
-                onPressed: () {}, // Placeholder
-              ),
+              _buildClinicFinderButton(color),
               const SizedBox(height: 12),
             ],
             _buildResultButton(
@@ -702,7 +686,7 @@ class _HomePageState extends State<HomePage> {
               Colors.transparent,
               color,
               false,
-              borderColor: color.withOpacity(0.2),
+              borderColor: color.withValues(alpha: 0.2),
               onPressed: () => _openSymptomInsight(
                 color,
                 riskCode,
@@ -720,7 +704,7 @@ class _HomePageState extends State<HomePage> {
               Colors.white,
               AppColors.mutedForeground,
               false,
-              borderColor: AppColors.muted.withOpacity(0.3),
+              borderColor: AppColors.muted.withValues(alpha: 0.3),
               onPressed: () => _onRetakeAssessment(isFullAssessment),
             ),
           ],
@@ -753,14 +737,15 @@ class _HomePageState extends State<HomePage> {
               .where(
                 (s) => s is Map && (s['cfValue'] as num?)?.toDouble() == 1.0,
               )
-              .map(
-                (s) => {
-                  'symptomName': (s as Map)['symptomName'] ?? '-',
-                  'symptomDescription': '',
+              .map((s) {
+                final m = s as Map;
+                return {
+                  'symptomName': m['symptomName'] ?? '-',
+                  'symptomDescription': m['symptomDescription'],
                   'cfValue': 1.0,
-                  'tbTypeId': (s['originTbTypeId'] as int?) ?? 0,
-                },
-              )
+                  'tbTypeId': (m['originTbTypeId'] as int?) ?? 0,
+                };
+              })
               .toList();
           final riskLevel = r['riskLevel'] as Map<String, dynamic>?;
           items.add({
@@ -825,7 +810,7 @@ class _HomePageState extends State<HomePage> {
             for (final tw in targets) {
               byTbType.putIfAbsent(tw.tbTypeId, () => []).add({
                 'symptomName': q.symptomName,
-                'symptomDescription': q.symptomDescription ?? '',
+                'symptomDescription': q.symptomDescription,
                 'cfValue': 1.0,
                 'tbTypeId': q.tbTypeId,
               });
@@ -897,8 +882,59 @@ class _HomePageState extends State<HomePage> {
         'type': isFullAssessment ? 'Pemeriksaan Lengkap' : 'Cek Cepat',
         'color': color,
         'icon': icon,
-        if (detail != null) 'detailData': detail,
+        'detailData': detail,
       },
+    );
+  }
+
+  Widget _buildClinicFinderButton(Color color) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.08),
+            color.withValues(alpha: 0.15),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: ElevatedButton(
+        onPressed: () => UrlUtils.launchNearestClinicMap(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_on_rounded, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Cari Faskes Terdekat',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.open_in_new_rounded,
+              color: color.withValues(alpha: 0.6),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -920,7 +956,7 @@ class _HomePageState extends State<HomePage> {
         boxShadow: hasShadow
             ? [
                 BoxShadow(
-                  color: bgColor.withOpacity(0.4),
+                  color: bgColor.withValues(alpha: 0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -958,8 +994,6 @@ class _HomePageState extends State<HomePage> {
 
     // Extract the most recent result info
     final assessmentTypeId = assessment['assessmentTypeId'] as int? ?? 1;
-    final assessmentTypeName =
-        assessment['assessmentTypeName'] as String? ?? 'Assessment';
     final riskLevelCode = assessment['riskLevelCode'] as String? ?? 'LOW';
     final riskLevelTitle =
         assessment['riskLevelTitle'] as String? ?? 'Low Risk';
@@ -969,7 +1003,6 @@ class _HomePageState extends State<HomePage> {
     // For full assessment, we might have multiple results - just show the main risk
     String primaryRiskCode = riskLevelCode;
     String primaryRiskTitle = riskLevelTitle;
-    double primaryScore = pct.toDouble();
 
     final color = _colorForRisk(primaryRiskCode);
     final icon = _iconForRisk(primaryRiskCode);
@@ -986,12 +1019,12 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
@@ -1015,9 +1048,9 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.15)),
+                border: Border.all(color: color.withValues(alpha: 0.15)),
               ),
               child: Text(
                 assessmentBadge,
@@ -1097,9 +1130,9 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.05),
+                color: color.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: color.withOpacity(0.1)),
+                border: Border.all(color: color.withValues(alpha: 0.1)),
               ),
               child: Text(
                 description,
@@ -1128,14 +1161,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
             ],
             if (primaryRiskCode.toUpperCase() != 'LOW') ...[
-              _buildResultButton(
-                'Cari Klinik Terdekat',
-                Colors.transparent,
-                color,
-                false,
-                borderColor: color.withOpacity(0.2),
-                onPressed: () {}, // Placeholder
-              ),
+              _buildClinicFinderButton(color),
               const SizedBox(height: 12),
             ],
             _buildResultButton(
@@ -1143,7 +1169,7 @@ class _HomePageState extends State<HomePage> {
               Colors.transparent,
               color,
               false,
-              borderColor: color.withOpacity(0.2),
+              borderColor: color.withValues(alpha: 0.2),
               onPressed: () => _openSymptomInsight(
                 color,
                 primaryRiskCode,
@@ -1162,82 +1188,13 @@ class _HomePageState extends State<HomePage> {
               Colors.white,
               AppColors.mutedForeground,
               false,
-              borderColor: AppColors.muted.withOpacity(0.3),
+              borderColor: AppColors.muted.withValues(alpha: 0.3),
               onPressed: () => _onRetakeAssessment(isFullAssessment),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Map<String, dynamic>? _buildGuestDetailData() {
-    if (_storedResult == null || _config == null) return null;
-
-    final result = _storedResult!;
-    final symptoms = result['symptoms'] as Map<String, dynamic>? ?? {};
-    final isFull = (result['type'] as String?) == 'FULL ASSESSMENT';
-
-    // Group selected symptoms by TB type using config questions
-    final Map<int, List<Map<String, dynamic>>> byTbType = {};
-    final Map<int, String> tbTypeNames = {};
-    for (final q in _config!.questions) {
-      for (final tw in q.applicableTbTypes) {
-        tbTypeNames[tw.tbTypeId] = tw.tbTypeName;
-      }
-      tbTypeNames[q.tbTypeId] = q.tbTypeName ?? 'Kategori ${q.tbTypeId}';
-    }
-    for (final q in _config!.questions) {
-      final selected =
-          (symptoms[q.symptomId.toString()] == true) ||
-          (symptoms[q.symptomId] == true);
-      if (!selected) continue;
-      final targets = q.applicableTbTypes.isNotEmpty
-          ? q.applicableTbTypes
-          : [
-              TbTypeWeight(
-                tbTypeId: q.tbTypeId,
-                tbTypeName: q.tbTypeName ?? '',
-                weight: q.weight,
-              ),
-            ];
-      for (final tw in targets) {
-        byTbType.putIfAbsent(tw.tbTypeId, () => []).add({
-          'symptomName': q.symptomName,
-          'symptomDescription': q.symptomDescription ?? '',
-          'cfValue': 1.0,
-          'tbTypeId': q.tbTypeId,
-        });
-      }
-    }
-
-    if (byTbType.isEmpty) return null;
-
-    final items = <Map<String, dynamic>>[];
-    for (final entry in byTbType.entries) {
-      final pct = (result['percentage'] as int?) ?? 0;
-      items.add({
-        'primaryTbTypeId': entry.key,
-        'primaryTbTypeName': tbTypeNames[entry.key] ?? 'Kategori ${entry.key}',
-        'totalScore': pct,
-        'riskLevelTitle': result['riskTitle'] ?? 'Risiko Rendah',
-        'riskLevelCode': result['riskCode'] ?? 'LOW',
-        'selectedSymptoms': entry.value,
-        'scoreBreakdown': {
-          'results': [
-            {
-              'riskLevel': {'recommendation': result['description'] ?? ''},
-            },
-          ],
-        },
-      });
-    }
-
-    return {
-      'items': items,
-      'createdAt': DateTime.now().toIso8601String(),
-      'assessmentTypeName': isFull ? 'Full Assessment' : 'Quick Assessment',
-    };
   }
 
   Future<void> _onRetakeAssessment(bool isFullAssessment) async {
@@ -1255,18 +1212,6 @@ class _HomePageState extends State<HomePage> {
         _mostRecentAssessment = null;
       });
     }
-  }
-
-  void _retakeQuickCheck() {
-    GuestAssessmentService.clear();
-    setState(() {
-      _storedResult = null;
-      if (_config != null) {
-        _symptomStates = {
-          for (final q in _config!.questions) q.symptomId: false,
-        };
-      }
-    });
   }
 
   Color _colorForRisk(String code) {
@@ -1319,17 +1264,17 @@ class _HomePageState extends State<HomePage> {
         Positioned(
           top: -50,
           right: -50,
-          child: _buildAura(150, AppColors.primary.withOpacity(0.1)),
+          child: _buildAura(150, AppColors.primary.withValues(alpha: 0.1)),
         ),
         Positioned(
           top: sh * 0.2,
           left: -100,
-          child: _buildAura(180, AppColors.secondary.withOpacity(0.05)),
+          child: _buildAura(180, AppColors.secondary.withValues(alpha: 0.05)),
         ),
         Positioned(
           bottom: 100,
           right: 20,
-          child: _buildAura(100, AppColors.muted.withOpacity(0.1)),
+          child: _buildAura(100, AppColors.muted.withValues(alpha: 0.1)),
         ),
       ],
     );

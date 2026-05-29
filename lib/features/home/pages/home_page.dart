@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
@@ -49,14 +50,8 @@ class _HomePageState extends State<HomePage> {
   double get _combinedCF {
     if (_config == null || _answeredCount == 0) return 0;
 
-    // Quick check score is based on total questions and their weights:
-    // percentage = (sum(selected weights) / sum(all weights)) * 100
-    final totalWeight = _config!.questions.fold<double>(
-      0,
-      (acc, q) => acc + q.weight,
-    );
-    if (totalWeight <= 0) return 0;
-
+    // Use the same soft-saturation CF formula as the backend and full assessment.
+    // score = 1.0 - exp(-k * sum(weights))
     double selectedWeight = 0;
     _symptomStates.forEach((symptomId, selected) {
       if (!selected) return;
@@ -67,7 +62,8 @@ class _HomePageState extends State<HomePage> {
       selectedWeight += q.weight;
     });
 
-    return selectedWeight / totalWeight;
+    final k = _config!.saturationK;
+    return 1.0 - exp(-k * selectedWeight);
   }
 
   int get _percentage => (_combinedCF * 100).round();
@@ -139,28 +135,61 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Re-fetch all data sources that depend on the network. Called on
-  /// pull-to-refresh and after returning online.
+  /// pull-to-refresh and after returning online. If we have nothing to fetch
+  /// against (offline), the existing cached state is preserved — the user
+  /// keeps seeing their last result instead of being kicked back to the
+  /// fresh assessment card.
   Future<void> _refreshAll() async {
+    final online = await ConnectivityService.isOnline();
+    if (!online) {
+      _showSnack(
+        'Tidak ada koneksi. Menampilkan data terakhir.',
+        background: AppColors.warning,
+      );
+      return;
+    }
     await Future.wait<void>([
       _loadConfig(),
       _loadUser(),
     ]);
   }
 
+  /// Cache-then-revalidate for the logged-in user's most-recent assessment:
+  /// 1. Hydrate from local cache so the card renders instantly.
+  /// 2. Fetch from backend in the background.
+  /// 3. On success → update state + overwrite cache.
+  /// 4. On failure → keep the cached value visible (do not null it out).
   Future<void> _loadMostRecentAssessment() async {
     if (_isGuest) return;
+    final user = await StorageService.getUser();
+    final userId = user?.id ?? '';
 
-    setState(() => _loadingMostRecentAssessment = true);
-
-    try {
-      final assessment = await AssessmentApiService.fetchMostRecentAssessment();
-
-      if (!mounted) return;
+    // Step 1 — sync render from cache before hitting the network.
+    final cached = userId.isEmpty
+        ? null
+        : await StorageService.getCachedRecentAssessment(userId);
+    if (cached != null && mounted) {
       setState(() {
-        _mostRecentAssessment = assessment;
+        _mostRecentAssessment = cached;
         _loadingMostRecentAssessment = false;
       });
-    } catch (e) {
+    } else if (mounted) {
+      setState(() => _loadingMostRecentAssessment = true);
+    }
+
+    // Step 2 — fetch fresh.
+    try {
+      final assessment = await AssessmentApiService.fetchMostRecentAssessment();
+      if (!mounted) return;
+      setState(() {
+        if (assessment != null) _mostRecentAssessment = assessment;
+        _loadingMostRecentAssessment = false;
+      });
+      if (assessment != null && userId.isNotEmpty) {
+        await StorageService.saveCachedRecentAssessment(userId, assessment);
+      }
+    } catch (_) {
+      // Step 4 — keep whatever (cached or null) is on screen.
       if (!mounted) return;
       setState(() => _loadingMostRecentAssessment = false);
     }
@@ -380,12 +409,12 @@ class _HomePageState extends State<HomePage> {
   final Map<int, IconData> _symptomIcons = {
     1: Icons.air_outlined,
     2: Icons.water_drop_outlined,
-    3: Icons.accessibility_new_rounded,
+    3: Icons.thermostat_outlined,
     4: Icons.waves_outlined,
-    5: Icons.monitor_weight_outlined,
-    6: Icons.thermostat_outlined,
-    7: Icons.nightlight_outlined,
-    8: Icons.battery_alert_outlined,
+    5: Icons.no_meals_outlined,
+    6: Icons.monitor_weight_outlined,
+    7: Icons.battery_alert_outlined,
+    8: Icons.nightlight_outlined,
   };
 
   Widget _buildSymptomItem(QuickCheckQuestion q) {
@@ -513,22 +542,24 @@ class _HomePageState extends State<HomePage> {
     setState(() => _submittingQuick = true);
 
     try {
-      // Gate 1: refuse to submit while offline. The config/descriptions the
-      // result page renders depend on the live server config; allowing a
-      // submit with the fallback config produces a result with empty copy.
-      final online = await ConnectivityService.isOnline();
-      if (!online) {
-        _showSnack(
-          'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
-        );
-        return;
+      // Logged-in users must reach the backend to persist. Guests submit
+      // entirely locally and don't need the network — the fallback config
+      // has real Indonesian copy so an offline submit still produces a
+      // proper result page.
+      if (!_isGuest) {
+        final online = await ConnectivityService.isOnline();
+        if (!online) {
+          _showSnack(
+            'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+          );
+          return;
+        }
+        // If we just came back online, the cached config may be stale.
+        if (!_wasOnline) {
+          await _loadConfig();
+        }
       }
 
-      // If we were previously offline, the cached config may be the local
-      // fallback (no descriptions). Refresh before computing the result.
-      if (_config!.questions.isEmpty || !_wasOnline) {
-        await _loadConfig();
-      }
       if (_config == null || _config!.questions.isEmpty) {
         _showSnack('Gagal memuat data pemeriksaan. Coba lagi sebentar.');
         return;
@@ -553,10 +584,10 @@ class _HomePageState extends State<HomePage> {
         'symptoms': selectedSymptoms,
       };
 
-      // Gate 2: logged-in users must persist to backend successfully before
-      // the result is shown. Otherwise the user sees a "result" that's not
-      // saved anywhere and isn't retrievable later from history.
       if (!_isGuest) {
+        // Logged-in users must persist to backend successfully before the
+        // result is shown. Otherwise the user sees a "result" that's not
+        // saved anywhere and isn't retrievable later from history.
         final answers = <Map<String, dynamic>>[];
         for (final q in _config!.questions) {
           final selected = _symptomStates[q.symptomId] ?? false;
@@ -576,7 +607,30 @@ class _HomePageState extends State<HomePage> {
           _showSnack(msg);
           return;
         }
-        // Refresh the home card to reflect the just-saved session.
+        // Mitigation: seed the recent-assessment cache from the submit
+        // payload itself so the home card has data even if the next
+        // _loadMostRecentAssessment fetch fails (offline or backend slow).
+        final user = await StorageService.getUser();
+        if (user?.id != null && user!.id.isNotEmpty) {
+          final cacheRecord = {
+            'createdAt': DateTime.now().toIso8601String(),
+            'assessmentTypeId': 1,
+            'assessmentTypeName': 'Quick Check',
+            'riskLevelCode': matchedLevel?.code ?? 'LOW',
+            'riskLevelTitle': matchedLevel?.title ?? 'Risiko Rendah',
+            'totalScore': pct,
+            'primaryTbTypeName': '',
+          };
+          await StorageService.saveCachedRecentAssessment(
+            user.id,
+            cacheRecord,
+          );
+          // Reflect immediately in UI; the backend fetch will overwrite later.
+          if (mounted) {
+            setState(() => _mostRecentAssessment = cacheRecord);
+          }
+        }
+        // Kick a background refresh to pick up the canonical server record.
         if (mounted) _loadMostRecentAssessment();
       } else {
         // Guest path: persist locally so the home card survives navigation.
@@ -612,15 +666,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _showSnack(String message) {
+  void _showSnack(String message, {Color? background}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.destructive,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: background ?? AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   // ─── STORED RESULT CARD ────────────────────────────────────

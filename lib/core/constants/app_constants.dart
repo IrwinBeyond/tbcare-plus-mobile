@@ -58,4 +58,14 @@ class AppConstants {
   static const String keyRefreshToken = 'refresh_token';
   static const String keyUser = 'user_json';
   static const String keyGuestAssessment = 'guest_assessment_json';
+
+  // Cached "most recent assessment" summary for logged-in users. Namespaced
+  // by user id at write time to prevent cross-account leakage on shared
+  // devices; cleared on logout.
+  static const String keyCachedRecentAssessmentPrefix = 'recent_assessment_';
+  // Cached server-fetched config JSON, used as offline fallback after the
+  // first successful fetch.
+  static const String keyCachedQuickCheckConfig = 'cached_quick_check_config';
+  static const String keyCachedFullAssessmentConfig =
+      'cached_full_assessment_config';
 }

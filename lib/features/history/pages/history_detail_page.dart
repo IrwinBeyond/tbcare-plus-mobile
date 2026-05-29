@@ -388,6 +388,7 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
           final desc = m['symptomDescription'] as String?;
           return {
             'name': m['symptomName'] ?? '-',
+            'code': m['symptomCode'] ?? '',
             'desc': (desc != null && desc.isNotEmpty)
                 ? desc
                 : 'No description available.',
@@ -524,8 +525,25 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
     Color color,
     int currentTbTypeId,
   ) {
-    final umum = symptoms.where((s) => (s['tbTypeId'] as int?) == 1).toList();
-    final khusus = symptoms.where((s) => (s['tbTypeId'] as int?) != 1).toList();
+    final umum = symptoms.where((s) {
+      final code = (s['code'] as String?) ?? '';
+      if (!code.startsWith('G')) return false;
+      final digits = code.replaceAll(RegExp(r'[^0-9]'), '');
+      final numPart = int.tryParse(digits);
+      return numPart != null &&
+          numPart >= 1 &&
+          numPart <= 8 &&
+          !code.contains(RegExp(r'[a-z]'));
+    }).toList();
+    final khusus = symptoms.where((s) {
+      final code = (s['code'] as String?) ?? '';
+      if (!code.startsWith('G')) return true;
+      final digits = code.replaceAll(RegExp(r'[^0-9]'), '');
+      final numPart = int.tryParse(digits);
+      return numPart == null ||
+          numPart > 8 ||
+          code.contains(RegExp(r'[a-z]'));
+    }).toList();
     final isTbType1 = currentTbTypeId == 1;
 
     if (isTbType1) {

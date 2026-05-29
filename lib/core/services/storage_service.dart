@@ -61,10 +61,57 @@ class StorageService {
     await prefs.remove(AppConstants.keyAccessToken);
     await prefs.remove(AppConstants.keyRefreshToken);
     await prefs.remove(AppConstants.keyUser);
+
+    // Wipe all per-user cached recent-assessment entries so a logout followed
+    // by a different user's login can't briefly surface the previous account's
+    // result card.
+    final keys = prefs.getKeys()
+        .where((k) => k.startsWith(AppConstants.keyCachedRecentAssessmentPrefix))
+        .toList();
+    for (final k in keys) {
+      await prefs.remove(k);
+    }
   }
 
   static Future<bool> isLoggedIn() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;
+  }
+
+  // ── Cached Most-Recent Assessment (per-user) ─────────────────────────
+  //
+  // Stores the last successfully-fetched OR just-submitted assessment summary
+  // for a logged-in user. Survives offline pulls so the home card doesn't
+  // revert to the fresh "quick check" view when the server is unreachable.
+  // Keyed by user id to prevent leakage across accounts on a shared device.
+
+  static String _recentAssessmentKey(String userId) =>
+      '${AppConstants.keyCachedRecentAssessmentPrefix}$userId';
+
+  static Future<void> saveCachedRecentAssessment(
+    String userId,
+    Map<String, dynamic> summary,
+  ) async {
+    if (userId.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_recentAssessmentKey(userId), jsonEncode(summary));
+  }
+
+  static Future<Map<String, dynamic>?> getCachedRecentAssessment(
+    String userId,
+  ) async {
+    if (userId.isEmpty) return null;
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString(_recentAssessmentKey(userId));
+    if (json == null) return null;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map<String, dynamic>) return decoded;
+      await prefs.remove(_recentAssessmentKey(userId));
+      return null;
+    } on FormatException {
+      await prefs.remove(_recentAssessmentKey(userId));
+      return null;
+    }
   }
 }

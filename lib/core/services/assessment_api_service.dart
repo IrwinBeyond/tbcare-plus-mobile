@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/assessment_config_models.dart';
 import '../utils/network_exception.dart';
@@ -43,13 +44,21 @@ class AssessmentApiService {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         final data = json['data'] as Map<String, dynamic>?;
         if (data != null) {
+          // Persist for offline use on next cold start.
+          await _saveCachedConfig(
+            AppConstants.keyCachedQuickCheckConfig,
+            data,
+          );
           return QuickCheckConfig.fromJson(data);
         }
       }
-      return QuickCheckConfig.fallback();
     } catch (_) {
-      return QuickCheckConfig.fallback();
+      // Network or parsing error — fall through to cache/fallback below.
     }
+    final cached = await _loadCachedConfig(
+      AppConstants.keyCachedQuickCheckConfig,
+    );
+    return cached ?? QuickCheckConfig.fallback();
   }
 
   static Future<QuickCheckConfig> fetchFullAssessmentConfig() async {
@@ -59,36 +68,62 @@ class AssessmentApiService {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
-        _throwHttpError(
-          response,
-          'Gagal memuat konfigurasi pemeriksaan dari server.',
+        // If server returns error, still try to fall back to cache/local.
+        final cached = await _loadCachedConfig(
+          AppConstants.keyCachedFullAssessmentConfig,
         );
+        return cached ?? QuickCheckConfig.fullFallback();
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final data = json['data'] as Map<String, dynamic>?;
       if (data == null) {
-        throw NetworkException(
-          'Respons server tidak valid.',
-          NetworkErrorType.format,
+        final cached = await _loadCachedConfig(
+          AppConstants.keyCachedFullAssessmentConfig,
         );
+        return cached ?? QuickCheckConfig.fullFallback();
       }
+      await _saveCachedConfig(
+        AppConstants.keyCachedFullAssessmentConfig,
+        data,
+      );
       return QuickCheckConfig.fromJson(data);
-    } on TimeoutException {
-      throw NetworkException(
-        'Server tidak merespons. Coba lagi sebentar.',
-        NetworkErrorType.timeout,
+    } catch (_) {
+      // Catch all (Timeout, Socket, Format, etc.) and try to fall back.
+      final cached = await _loadCachedConfig(
+        AppConstants.keyCachedFullAssessmentConfig,
       );
-    } on SocketException {
-      throw NetworkException(
-        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-        NetworkErrorType.offline,
-      );
-    } on FormatException {
-      throw NetworkException(
-        'Respons server tidak valid.',
-        NetworkErrorType.format,
-      );
+      return cached ?? QuickCheckConfig.fullFallback();
+    }
+  }
+
+  /// Persists a config JSON payload for offline reuse on next cold start.
+  /// Best-effort — silently no-ops on storage failure since the in-memory
+  /// config is still valid for this session.
+  static Future<void> _saveCachedConfig(
+    String key,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(data));
+    } catch (_) {}
+  }
+
+  /// Returns the cached config previously persisted by [_saveCachedConfig],
+  /// or null if no cache exists or it's corrupt.
+  static Future<QuickCheckConfig?> _loadCachedConfig(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString(key);
+      if (json == null) return null;
+      final decoded = jsonDecode(json);
+      if (decoded is Map<String, dynamic>) {
+        return QuickCheckConfig.fromJson(decoded);
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 

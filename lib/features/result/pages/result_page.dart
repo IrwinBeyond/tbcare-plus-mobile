@@ -127,6 +127,7 @@ class _ResultPageState extends State<ResultPage> {
         if (!selected) continue;
         byTbType.putIfAbsent(q.tbTypeId, () => []).add({
           'symptomName': q.symptomName,
+          'symptomCode': q.symptomCode,
           'symptomDescription': q.symptomDescription,
           'cfValue': 1.0,
           'tbTypeId': q.tbTypeId,
@@ -551,16 +552,29 @@ class _ResultPageState extends State<ResultPage> {
     Color color,
     int currentTbTypeId,
   ) {
-    final umum = symptoms
-        .where((s) => (s['originTbTypeId'] as int?) == 1)
-        .toList();
-    final khusus = symptoms
-        .where((s) => (s['originTbTypeId'] as int?) != 1)
-        .toList();
+    final umum = symptoms.where((s) {
+      final code = (s['symptomCode'] as String?) ?? '';
+      if (!code.startsWith('G')) return false;
+      final digits = code.replaceAll(RegExp(r'[^0-9]'), '');
+      final numPart = int.tryParse(digits);
+      return numPart != null &&
+          numPart >= 1 &&
+          numPart <= 8 &&
+          !code.contains(RegExp(r'[a-z]'));
+    }).toList();
+    final khusus = symptoms.where((s) {
+      final code = (s['symptomCode'] as String?) ?? '';
+      if (!code.startsWith('G')) return true;
+      final digits = code.replaceAll(RegExp(r'[^0-9]'), '');
+      final numPart = int.tryParse(digits);
+      return numPart == null ||
+          numPart > 8 ||
+          code.contains(RegExp(r'[a-z]'));
+    }).toList();
     final isTbType1 = currentTbTypeId == 1;
 
     if (isTbType1) {
-      // No separation for tb_type=1, no title
+      // No separation for tb_type=1, show all selected symptoms
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

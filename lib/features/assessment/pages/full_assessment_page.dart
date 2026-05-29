@@ -186,22 +186,26 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      // Gate 1: refuse submit while offline so we don't render a result page
-      // with no risk-level copy (the fallback config has no descriptions).
-      final online = await ConnectivityService.isOnline();
-      if (!online) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+      // Only logged-in users need the network — they must persist the result
+      // to the backend. Guests submit fully locally; the fallback config now
+      // carries real Indonesian copy so an offline guest still gets a proper
+      // result page.
+      if (_isLoggedIn) {
+        final online = await ConnectivityService.isOnline();
+        if (!online) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+                ),
+                backgroundColor: AppColors.destructive,
+                behavior: SnackBarBehavior.floating,
               ),
-              backgroundColor: AppColors.destructive,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+            );
+          }
+          return;
         }
-        return;
       }
       // Compute per-TB-type sums using applicableTbTypes for cross-type contribution
       final Map<int, double> sumByTbType = {};
@@ -235,6 +239,7 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
               (sumByTbType[tw.tbTypeId] ?? 0) + tw.weight;
           symptomsByTbType.putIfAbsent(tw.tbTypeId, () => []).add({
             'symptomName': q.symptomName,
+            'symptomCode': q.symptomCode,
             'cfValue': cfValue,
             'originTbTypeId': q.tbTypeId,
           });
@@ -328,6 +333,31 @@ class _FullAssessmentPageState extends State<FullAssessmentPage> {
             );
           }
           return;
+        }
+        // Mitigation: seed the recent-assessment cache from the submit
+        // payload itself, picking the highest-risk per-type result. This way
+        // the home card on next open has data even if backend fetch fails.
+        Map<String, dynamic>? highest;
+        double highestScore = -1;
+        for (final r in results) {
+          final score = (r['totalScore'] as num).toDouble();
+          if (score > highestScore) {
+            highestScore = score;
+            highest = r;
+          }
+        }
+        final user = await StorageService.getUser();
+        if (highest != null && user?.id != null && user!.id.isNotEmpty) {
+          final riskLevel = highest['riskLevel'] as Map<String, dynamic>?;
+          await StorageService.saveCachedRecentAssessment(user.id, {
+            'createdAt': DateTime.now().toIso8601String(),
+            'assessmentTypeId': 2,
+            'assessmentTypeName': 'Full Assessment',
+            'riskLevelCode': riskLevel?['code'] ?? 'LOW',
+            'riskLevelTitle': riskLevel?['title'] ?? 'Risiko Rendah',
+            'totalScore': (highest['totalScore'] as num).toInt(),
+            'primaryTbTypeName': highest['tbTypeName'] ?? '',
+          });
         }
       }
 

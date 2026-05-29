@@ -894,6 +894,10 @@ class _HomePageState extends State<HomePage> {
             : _buildGuestQuickDetail(stored, pct, riskTitle, riskCode);
       }
     }
+    // Authenticated insight requires a live backend fetch (architecture:
+    // authenticated = online-required). The `requiresOnline` flag makes
+    // HistoryDetailPage enforce connectivity, resolve the sessionKey, and show a
+    // full-page no-internet handler on failure — never a silent empty page.
 
     if (!mounted) return;
     Navigator.pushNamed(
@@ -901,6 +905,7 @@ class _HomePageState extends State<HomePage> {
       AppRoutes.historyDetail,
       arguments: {
         'sessionKey': sessionKey ?? '',
+        'requiresOnline': !_isGuest,
         'date': 'Sekarang',
         'riskLevel': riskTitle,
         'riskLevelCode': riskCode,

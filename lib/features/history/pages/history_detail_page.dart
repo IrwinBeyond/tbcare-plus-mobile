@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/network_exception.dart';
+import '../../../core/widgets/error_state.dart';
 
 class HistoryDetailPage extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -15,6 +17,7 @@ class HistoryDetailPage extends StatefulWidget {
 class _HistoryDetailPageState extends State<HistoryDetailPage> {
   bool _loading = true;
   Map<String, dynamic>? _detail;
+  NetworkException? _loadError;
   final Map<String, bool> _tbTypeExpanded = {};
 
   @override
@@ -26,8 +29,15 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
   Future<void> _loadDetail() async {
     final sessionKey = (widget.item['sessionKey'] as String?) ?? '';
 
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+
     // If a session key is available, always fetch from API so descriptions
-    // are present from first paint. Fall back to local detail on failure.
+    // are present from first paint. Fall back to local detail on failure;
+    // surface a retryable error only when there's no local fallback at all.
     if (sessionKey.isNotEmpty) {
       try {
         final apiDetail =
@@ -37,12 +47,19 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
           _detail = apiDetail ?? widget.detail;
           _loading = false;
         });
-      } catch (_) {
+      } catch (e) {
         if (!mounted) return;
-        setState(() {
-          _detail = widget.detail;
-          _loading = false;
-        });
+        if (widget.detail != null) {
+          setState(() {
+            _detail = widget.detail;
+            _loading = false;
+          });
+        } else {
+          setState(() {
+            _loadError = NetworkException.from(e);
+            _loading = false;
+          });
+        }
       }
       return;
     }
@@ -115,6 +132,12 @@ class _HistoryDetailPageState extends State<HistoryDetailPage> {
                 Expanded(
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
+                      : _loadError != null
+                      ? ErrorState(
+                          message: _loadError!.userMessage,
+                          type: _loadError!.type,
+                          onRetry: _loadDetail,
+                        )
                       : SingleChildScrollView(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,

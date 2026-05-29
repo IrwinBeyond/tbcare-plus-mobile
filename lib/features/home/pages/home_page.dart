@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/guest_assessment_service.dart';
+import '../../../core/utils/network_exception.dart';
 import '../../../core/utils/url_utils.dart';
 import '../../../core/services/assessment_api_service.dart';
 import '../../../core/models/assessment_config_models.dart';
@@ -32,6 +35,14 @@ class _HomePageState extends State<HomePage> {
   // For logged-in users: most recent assessment data
   Map<String, dynamic>? _mostRecentAssessment;
   bool _loadingMostRecentAssessment = false;
+
+  // Re-entry guard for the quick-check submit so rapid taps can't fire twice.
+  bool _submittingQuick = false;
+
+  // Tracks the device's most recent online/offline state. Used to detect
+  // the offline→online transition and auto-refresh when the user returns.
+  bool _wasOnline = true;
+  StreamSubscription<bool>? _connectivitySub;
 
   int get _answeredCount => _symptomStates.values.where((v) => v).length;
 
@@ -100,6 +111,40 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadUser();
     _loadConfig();
+    _subscribeConnectivity();
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
+  }
+
+  void _subscribeConnectivity() {
+    // Seed initial state so an early "online" emission doesn't misfire the
+    // refresh logic when the app is already online at launch.
+    ConnectivityService.isOnline().then((online) {
+      if (!mounted) return;
+      _wasOnline = online;
+    });
+    _connectivitySub = ConnectivityService.onChange().listen((online) {
+      if (!mounted) return;
+      // Only react to the offline→online transition. We don't want to refetch
+      // every time the user toggles between WiFi and mobile data while online.
+      if (!_wasOnline && online) {
+        _refreshAll();
+      }
+      _wasOnline = online;
+    });
+  }
+
+  /// Re-fetch all data sources that depend on the network. Called on
+  /// pull-to-refresh and after returning online.
+  Future<void> _refreshAll() async {
+    await Future.wait<void>([
+      _loadConfig(),
+      _loadUser(),
+    ]);
   }
 
   Future<void> _loadMostRecentAssessment() async {
@@ -130,11 +175,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadUser() async {
-    final user = await StorageService.getUser();
+    // Source-of-truth for "is this an authenticated session" is the access
+    // token. A cached user without a token (e.g., after token expiry or a
+    // partial logout) is NOT logged in — treat as guest.
+    final loggedIn = await StorageService.isLoggedIn();
+    final user = loggedIn ? await StorageService.getUser() : null;
     if (!mounted) return;
     final wasGuest = _isGuest;
     setState(() {
-      _isGuest = user == null;
+      _isGuest = !loggedIn;
       _userName = user?.fullName;
       _profilePicture = user?.profilePicture;
     });
@@ -197,20 +246,25 @@ class _HomePageState extends State<HomePage> {
                       StorageService.cachedUser?.profilePicture,
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    child: Column(
-                      children: [
-                        if (_loadingConfig ||
-                            (_loadingMostRecentAssessment && !_isGuest))
-                          _buildLoadingCard()
-                        else if (!_isGuest && _mostRecentAssessment != null)
-                          _buildLoggedInResultCard()
-                        else if (_hasStoredResult)
-                          _buildStoredResultCard()
-                        else
-                          _buildAssessmentCard(),
-                      ],
+                  child: RefreshIndicator(
+                    onRefresh: _refreshAll,
+                    color: AppColors.primary,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      child: Column(
+                        children: [
+                          if (_loadingConfig ||
+                              (_loadingMostRecentAssessment && !_isGuest))
+                            _buildLoadingCard()
+                          else if (!_isGuest && _mostRecentAssessment != null)
+                            _buildLoggedInResultCard()
+                          else if (_hasStoredResult)
+                            _buildStoredResultCard()
+                          else
+                            _buildAssessmentCard(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -433,7 +487,7 @@ class _HomePageState extends State<HomePage> {
             : null,
       ),
       child: ElevatedButton(
-        onPressed: hasSelection ? _onCheckRisk : null,
+        onPressed: (hasSelection && !_submittingQuick) ? _onCheckRisk : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -455,68 +509,117 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _onCheckRisk() async {
     if (_answeredCount == 0 || _config == null) return;
-
-    final cf = _combinedCF;
-    final pct = _percentage;
-    final risk = _risk;
-    final matchedLevel = _matchedRiskLevel;
-
-    final selectedSymptoms = <String, bool>{};
-    _symptomStates.forEach((k, v) => selectedSymptoms[k.toString()] = v);
-
-    final assessmentData = {
-      'riskLevel': risk.name,
-      'combinedCF': cf,
-      'percentage': pct,
-      'riskCode': matchedLevel?.code ?? 'LOW',
-      'riskTitle': matchedLevel?.title ?? '',
-      'description': matchedLevel?.description ?? '',
-      'type': 'QUICK CHECK',
-      'symptoms': selectedSymptoms,
-    };
+    if (_submittingQuick) return;
+    setState(() => _submittingQuick = true);
 
     try {
-      await GuestAssessmentService.save(assessmentData);
-      if (!mounted) return;
-      setState(() => _storedResult = assessmentData);
-    } catch (_) {}
-
-    // If user is logged in, fire-and-forget persist to backend history.
-    if (!_isGuest) {
-      final answers = <Map<String, dynamic>>[];
-      for (final q in _config!.questions) {
-        final selected = _symptomStates[q.symptomId] ?? false;
-        if (!selected) continue;
-        answers.add({'questionId': q.questionId, 'cfValue': 1.0});
+      // Gate 1: refuse to submit while offline. The config/descriptions the
+      // result page renders depend on the live server config; allowing a
+      // submit with the fallback config produces a result with empty copy.
+      final online = await ConnectivityService.isOnline();
+      if (!online) {
+        _showSnack(
+          'Anda sedang offline. Periksa koneksi internet Anda lalu coba lagi.',
+        );
+        return;
       }
 
-      if (answers.isNotEmpty) {
-        // Submit in background — don't block navigation.
-        AssessmentApiService.submitAssessment(
-              assessmentTypeId: 1,
-              answers: answers,
-            )
-            .then((_) {
-              if (mounted) _loadMostRecentAssessment();
-            })
-            .catchError((e) {
-              // ignore: avoid_print
-              print('submitAssessment(quick) failed: $e');
-            });
+      // If we were previously offline, the cached config may be the local
+      // fallback (no descriptions). Refresh before computing the result.
+      if (_config!.questions.isEmpty || !_wasOnline) {
+        await _loadConfig();
       }
-    }
+      if (_config == null || _config!.questions.isEmpty) {
+        _showSnack('Gagal memuat data pemeriksaan. Coba lagi sebentar.');
+        return;
+      }
 
-    // Navigate to result page for both guest and logged-in users.
-    if (!mounted) return;
-    Navigator.pushNamed(
-      context,
-      AppRoutes.result,
-      arguments: {
-        'riskLevel': risk,
-        'isGuest': _isGuest,
+      final cf = _combinedCF;
+      final pct = _percentage;
+      final risk = _risk;
+      final matchedLevel = _matchedRiskLevel;
+
+      final selectedSymptoms = <String, bool>{};
+      _symptomStates.forEach((k, v) => selectedSymptoms[k.toString()] = v);
+
+      final assessmentData = {
+        'riskLevel': risk.name,
+        'combinedCF': cf,
         'percentage': pct,
-        'assessmentData': assessmentData,
-      },
+        'riskCode': matchedLevel?.code ?? 'LOW',
+        'riskTitle': matchedLevel?.title ?? '',
+        'description': matchedLevel?.description ?? '',
+        'type': 'QUICK CHECK',
+        'symptoms': selectedSymptoms,
+      };
+
+      // Gate 2: logged-in users must persist to backend successfully before
+      // the result is shown. Otherwise the user sees a "result" that's not
+      // saved anywhere and isn't retrievable later from history.
+      if (!_isGuest) {
+        final answers = <Map<String, dynamic>>[];
+        for (final q in _config!.questions) {
+          final selected = _symptomStates[q.symptomId] ?? false;
+          if (!selected) continue;
+          answers.add({'questionId': q.questionId, 'cfValue': 1.0});
+        }
+
+        if (answers.isEmpty) return;
+
+        try {
+          await AssessmentApiService.submitAssessment(
+            assessmentTypeId: 1,
+            answers: answers,
+          );
+        } catch (e) {
+          final msg = NetworkException.from(e).userMessage;
+          _showSnack(msg);
+          return;
+        }
+        // Refresh the home card to reflect the just-saved session.
+        if (mounted) _loadMostRecentAssessment();
+      } else {
+        // Guest path: persist locally so the home card survives navigation.
+        try {
+          await GuestAssessmentService.save(assessmentData);
+          if (mounted) setState(() => _storedResult = assessmentData);
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      // Zero-duration transition so the user doesn't see the home page
+      // underneath during the standard fade+slide.
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          settings: RouteSettings(
+            name: AppRoutes.result,
+            arguments: {
+              'riskLevel': risk,
+              'isGuest': _isGuest,
+              'percentage': pct,
+              'assessmentData': assessmentData,
+            },
+          ),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const ResultPage(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submittingQuick = false);
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.destructive,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 

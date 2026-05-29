@@ -512,8 +512,17 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 14),
-        _buildSecondaryButton('Lanjutkan sebagai Tamu', () {
-          Navigator.pushNamed(context, AppRoutes.home);
+        _buildSecondaryButton('Lanjutkan sebagai Tamu', () async {
+          // Drop any lingering session data before entering guest mode so
+          // downstream pages don't see a stale cached user without a token.
+          await StorageService.clear();
+          if (!mounted) return;
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.home,
+            (route) => false,
+            arguments: const {'isGuest': true},
+          );
         }),
       ],
     );

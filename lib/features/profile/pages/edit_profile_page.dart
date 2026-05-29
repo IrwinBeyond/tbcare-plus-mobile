@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +7,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/auth_api_service.dart';
 import '../../../core/services/asset_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -65,11 +67,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (result == null || result.files.isEmpty) return;
       final file = result.files.first;
       if (file.bytes == null) return;
+      final resized = await ImageUtils.resizeForProfilePicture(file.bytes!);
+      if (!mounted) return;
       setState(() {
-        _pickedBytes = file.bytes;
-        _pickedFileName = file.name;
+        _pickedBytes = resized;
+        // After resize, output is always JPEG.
+        _pickedFileName = _swapExtension(file.name, 'jpg');
       });
     } catch (_) {}
+  }
+
+  String _swapExtension(String name, String newExt) {
+    final dot = name.lastIndexOf('.');
+    if (dot <= 0) return '$name.$newExt';
+    return '${name.substring(0, dot)}.$newExt';
   }
 
   Future<void> _onSave() async {
@@ -81,12 +92,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       String? pic;
       if (_pickedBytes != null) {
-        final ext = _pickedFileName?.split('.').last ?? 'png';
-        final mime = ext == 'jpg' || ext == 'jpeg'
-            ? 'image/jpeg'
-            : 'image/$ext';
+        // Resize always re-encodes to JPEG (see ImageUtils).
         final base64 = base64Encode(_pickedBytes!);
-        pic = 'data:$mime;base64,$base64';
+        pic = 'data:image/jpeg;base64,$base64';
       } else {
         pic = _profilePictureUrl;
       }
@@ -97,10 +105,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
       await AuthApiService.fetchCurrentUser();
       if (!mounted) return;
       Navigator.pop(context, true);
+    } on TimeoutException {
+      // Upload may have actually succeeded server-side; check.
+      final recovered = await _verifyServerSavedPicture();
+      if (!mounted) return;
+      if (recovered) {
+        Navigator.pop(context, true);
+        return;
+      }
+      setState(() => _error =
+          'Unggahan terlalu lama. Periksa koneksi Anda lalu coba lagi.');
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// After a timeout, re-fetch the user and compare picture URL against what
+  /// the page had on entry. If it changed, the server actually saved it.
+  Future<bool> _verifyServerSavedPicture() async {
+    try {
+      final user = await AuthApiService.fetchCurrentUser();
+      return (user.profilePicture ?? '') != (_profilePictureUrl ?? '');
+    } catch (_) {
+      return false;
     }
   }
 

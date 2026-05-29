@@ -43,8 +43,15 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(AppConstants.keyUser);
     if (json == null) return null;
-    _cachedUser = UserModel.fromJsonString(json);
-    return _cachedUser;
+    try {
+      _cachedUser = UserModel.fromJsonString(json);
+      return _cachedUser;
+    } catch (_) {
+      // Stored JSON is corrupt or from an incompatible older app version.
+      // Drop it so the next login replaces it cleanly.
+      await prefs.remove(AppConstants.keyUser);
+      return null;
+    }
   }
 
   // ── Clear (logout) ────────────────────────────────────────────────────

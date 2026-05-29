@@ -14,7 +14,7 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Hero(
-      tag: 'app-bottom-nav',
+      tag: 'bottom-nav-logged-in',
       flightShuttleBuilder:
           (flightContext, animation, direction, fromContext, toContext) =>
               toContext.widget,

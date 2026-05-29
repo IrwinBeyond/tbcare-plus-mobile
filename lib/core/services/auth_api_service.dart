@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 import '../models/auth_models.dart';
+import '../utils/network_exception.dart';
 import 'session_service.dart';
 import 'storage_service.dart';
 
@@ -143,31 +144,54 @@ class AuthApiService {
     if (nickname != null) body['nickname'] = nickname;
     if (profilePicture != null) body['profilePicture'] = profilePicture;
 
-    final response = await http
-        .put(
-          Uri.parse(AppConstants.usersUpdateMe),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 15));
+    // Picture uploads can take a while on slow networks even after
+    // client-side compression. Caller catches TimeoutException to verify
+    // server-side state before reporting failure.
+    final timeout = profilePicture != null
+        ? const Duration(seconds: 60)
+        : const Duration(seconds: 15);
 
-    if (response.statusCode == 401) {
-      throw Exception('Sesi login telah berakhir. Silakan login kembali.');
-    }
+    try {
+      final response = await http
+          .put(
+            Uri.parse(AppConstants.usersUpdateMe),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(timeout);
 
-    if (response.statusCode != 200) {
-      try {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final message =
-            (json['message'] as String?) ?? 'Gagal memperbarui profil.';
-        throw Exception(message);
-      } catch (e) {
-        if (e is Exception) rethrow;
-        throw Exception('Gagal memperbarui profil.');
+      if (response.statusCode == 401) {
+        throw Exception('Sesi login telah berakhir. Silakan login kembali.');
       }
+
+      if (response.statusCode == 413) {
+        throw Exception(
+          'Gambar terlalu besar untuk diunggah. Coba pilih gambar yang lebih kecil.',
+        );
+      }
+
+      if (response.statusCode != 200) {
+        try {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          final message =
+              (json['message'] as String?) ?? 'Gagal memperbarui profil.';
+          throw Exception(message);
+        } catch (e) {
+          if (e is Exception) rethrow;
+          throw Exception('Gagal memperbarui profil.');
+        }
+      }
+    } on SocketException {
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
+    } on HttpException {
+      throw Exception('Terjadi kesalahan jaringan. Coba lagi.');
+    } on FormatException {
+      throw Exception('Respons server tidak valid.');
     }
   }
 
@@ -179,7 +203,10 @@ class AuthApiService {
   }) async {
     final token = await StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+      throw NetworkException(
+        'Token tidak ditemukan. Silakan login kembali.',
+        NetworkErrorType.unauthorized,
+      );
     }
 
     final body = jsonEncode({
@@ -188,32 +215,76 @@ class AuthApiService {
       'confirmPassword': confirmPassword,
     });
 
-    final response = await http
-        .post(
-          Uri.parse(AppConstants.authChangePassword),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: body,
-        )
-        .timeout(const Duration(seconds: 15));
+    try {
+      final response = await http
+          .post(
+            Uri.parse(AppConstants.authChangePassword),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 401) {
-      throw Exception('Sesi login telah berakhir. Silakan login kembali.');
-    }
-
-    if (response.statusCode != 200) {
-      try {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final message =
-            (json['message'] as String?) ?? 'Gagal mengubah kata sandi.';
-        throw Exception(message);
-      } catch (e) {
-        if (e is Exception) rethrow;
-        throw Exception('Gagal mengubah kata sandi.');
+      if (response.statusCode == 401) {
+        throw NetworkException(
+          'Sesi login telah berakhir. Silakan login kembali.',
+          NetworkErrorType.unauthorized,
+          statusCode: 401,
+        );
       }
+
+      if (response.statusCode != 200) {
+        String message = 'Gagal mengubah kata sandi.';
+        try {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          final m = json['message'];
+          if (m is String && m.isNotEmpty) message = _localizePasswordError(m);
+        } catch (_) {}
+        final type = response.statusCode >= 500
+            ? NetworkErrorType.server
+            : NetworkErrorType.http;
+        throw NetworkException(message, type, statusCode: response.statusCode);
+      }
+    } on TimeoutException {
+      throw NetworkException(
+        'Server tidak merespons. Coba lagi sebentar.',
+        NetworkErrorType.timeout,
+      );
+    } on SocketException {
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        NetworkErrorType.offline,
+      );
+    } on HttpException {
+      throw NetworkException(
+        'Terjadi kesalahan jaringan. Coba lagi.',
+        NetworkErrorType.http,
+      );
+    } on FormatException {
+      throw NetworkException(
+        'Respons server tidak valid.',
+        NetworkErrorType.format,
+      );
     }
+  }
+
+  /// Maps known Supabase password-error messages (which the backend forwards
+  /// verbatim) to Indonesian copy. Anything else passes through unchanged.
+  static String _localizePasswordError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('different from the old password') ||
+        lower.contains('should be different')) {
+      return 'Kata sandi baru harus berbeda dari kata sandi lama.';
+    }
+    if (lower.contains('password should be at least')) {
+      return 'Kata sandi terlalu pendek.';
+    }
+    if (lower.contains('weak password')) {
+      return 'Kata sandi terlalu mudah ditebak. Gunakan kombinasi huruf, angka, dan simbol.';
+    }
+    return raw;
   }
 
   // ── Logout ────────────────────────────────────────────────────────────

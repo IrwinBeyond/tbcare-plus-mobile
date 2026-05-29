@@ -9,14 +9,19 @@ TBCare+ is a tuberculosis early-detection expert system mobile app built with **
 - **Expert System Scoring** — Cross-TB-type certainty factor calculation
 - **Assessment History** — Session-grouped history with detailed symptom insights
 - **Profile Management** — Edit profile, change password, profile picture upload
+- **Offline Support** — Guests can complete and save an assessment locally; question
+  configs are cached after first fetch as an offline fallback. Authenticated actions
+  require connectivity and persist to the server.
 
 ## Tech Stack
 
 - **Framework**: Flutter (Dart 3.12+)
 - **Auth**: Supabase JWT
-- **HTTP**: `http` package
-- **Storage**: `shared_preferences`
-- **File Picker**: `file_picker`
+- **HTTP**: `http`
+- **Local Storage**: `shared_preferences` (tokens, cached configs, guest assessment)
+- **Connectivity**: `connectivity_plus` (offline pre-flight gating)
+- **Files & Images**: `file_picker`, `image` (profile picture pick/encode)
+- **Misc**: `intl` (date formatting), `url_launcher` (external links)
 
 ## Getting Started
 
@@ -62,9 +67,11 @@ For keystore setup, see the [Flutter Android deployment guide](https://docs.flut
 ```
 lib/
 ├── core/
-│   ├── constants/    # API endpoints, config
+│   ├── constants/    # API endpoints, base URL toggle, prefs keys
 │   ├── models/       # Data models, JSON serializers
-│   ├── services/     # Storage, auth, API services
+│   ├── services/     # Auth/assessment API, storage, connectivity,
+│   │                 #   guest assessment, session, asset caching
+│   ├── utils/        # NetworkException, image & URL helpers
 │   ├── theme/        # Colors, text styles, theme
 │   └── widgets/      # Shared widgets (HomeHeader, AppTopBar)
 ├── features/

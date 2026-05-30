@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 import '../models/auth_models.dart';
 import '../utils/network_exception.dart';
-import 'session_service.dart';
+import 'authorized_client.dart';
 import 'storage_service.dart';
 
 class AuthApiService {
@@ -85,22 +85,11 @@ class AuthApiService {
 
   // ── Fetch Current User (Profile) ──────────────────────────────────────
   static Future<UserModel> fetchCurrentUser() async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
-    }
-
-    final headers = {..._headers, 'Authorization': 'Bearer $token'};
-
     try {
-      final response = await http
-          .get(Uri.parse(AppConstants.usersMe), headers: headers)
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 401) {
-        await SessionService.logoutAndRedirectToLogin();
-        throw Exception('Sesi login telah berakhir. Silakan login kembali.');
-      }
+      final response = await AuthorizedClient.get(
+        Uri.parse(AppConstants.usersMe),
+        timeout: const Duration(seconds: 30),
+      );
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -135,11 +124,6 @@ class AuthApiService {
     String? nickname,
     String? profilePicture,
   }) async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
-    }
-
     final body = <String, dynamic>{};
     if (nickname != null) body['nickname'] = nickname;
     if (profilePicture != null) body['profilePicture'] = profilePicture;
@@ -152,20 +136,11 @@ class AuthApiService {
         : const Duration(seconds: 15);
 
     try {
-      final response = await http
-          .put(
-            Uri.parse(AppConstants.usersUpdateMe),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(timeout);
-
-      if (response.statusCode == 401) {
-        throw Exception('Sesi login telah berakhir. Silakan login kembali.');
-      }
+      final response = await AuthorizedClient.put(
+        Uri.parse(AppConstants.usersUpdateMe),
+        body: jsonEncode(body),
+        timeout: timeout,
+      );
 
       if (response.statusCode == 413) {
         throw Exception(
@@ -201,14 +176,6 @@ class AuthApiService {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw NetworkException(
-        'Token tidak ditemukan. Silakan login kembali.',
-        NetworkErrorType.unauthorized,
-      );
-    }
-
     final body = jsonEncode({
       'currentPassword': currentPassword,
       'newPassword': newPassword,
@@ -216,24 +183,11 @@ class AuthApiService {
     });
 
     try {
-      final response = await http
-          .post(
-            Uri.parse(AppConstants.authChangePassword),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: body,
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 401) {
-        throw NetworkException(
-          'Sesi login telah berakhir. Silakan login kembali.',
-          NetworkErrorType.unauthorized,
-          statusCode: 401,
-        );
-      }
+      final response = await AuthorizedClient.post(
+        Uri.parse(AppConstants.authChangePassword),
+        body: body,
+        timeout: const Duration(seconds: 15),
+      );
 
       if (response.statusCode != 200) {
         String message = 'Gagal mengubah kata sandi.';

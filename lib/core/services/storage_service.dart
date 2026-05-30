@@ -13,10 +13,14 @@ class StorageService {
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    required int expiresIn,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConstants.keyAccessToken, accessToken);
     await prefs.setString(AppConstants.keyRefreshToken, refreshToken);
+    final expiresAt =
+        DateTime.now().millisecondsSinceEpoch + expiresIn * 1000;
+    await prefs.setInt(AppConstants.keyTokenExpiresAt, expiresAt);
   }
 
   static Future<String?> getAccessToken() async {
@@ -27,6 +31,26 @@ class StorageService {
   static Future<String?> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(AppConstants.keyRefreshToken);
+  }
+
+  /// When the stored access token expires, or null if unknown (e.g. a session
+  /// created before token-expiry tracking existed).
+  static Future<DateTime?> getAccessTokenExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(AppConstants.keyTokenExpiresAt);
+    if (ms == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  /// True if the access token is expired (or within [leeway] of expiring).
+  /// Returns false when expiry is unknown — we don't force a proactive refresh
+  /// for legacy sessions; the reactive 401 path still covers them.
+  static Future<bool> isAccessTokenExpired({
+    Duration leeway = const Duration(seconds: 60),
+  }) async {
+    final expiry = await getAccessTokenExpiry();
+    if (expiry == null) return false;
+    return DateTime.now().add(leeway).isAfter(expiry);
   }
 
   // ── User ─────────────────────────────────────────────────────────────
@@ -60,6 +84,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.keyAccessToken);
     await prefs.remove(AppConstants.keyRefreshToken);
+    await prefs.remove(AppConstants.keyTokenExpiresAt);
     await prefs.remove(AppConstants.keyUser);
 
     // Wipe all per-user cached recent-assessment entries so a logout followed

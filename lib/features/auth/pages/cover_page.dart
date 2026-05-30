@@ -125,6 +125,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
       await StorageService.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        expiresIn: result.expiresIn,
       );
       await StorageService.saveUser(result.user);
       if (!mounted) return;

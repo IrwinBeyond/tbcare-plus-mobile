@@ -7,8 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/assessment_config_models.dart';
 import '../utils/network_exception.dart';
-import 'session_service.dart';
-import 'storage_service.dart';
+import 'authorized_client.dart';
 
 class AssessmentApiService {
   // Offline cold-start seeds captured live from the backend config endpoints.
@@ -19,15 +18,6 @@ class AssessmentApiService {
       'assets/config/quick_check_config.json';
   static const String _fullAssessmentConfigAsset =
       'assets/config/full_assessment_config.json';
-
-  static Future<void> _handleUnauthorized() async {
-    await SessionService.logoutAndRedirectToLogin();
-    throw NetworkException(
-      'Sesi login telah berakhir. Silakan login kembali.',
-      NetworkErrorType.unauthorized,
-      statusCode: 401,
-    );
-  }
 
   /// Throws a typed NetworkException for any non-2xx response after attempting
   /// to extract a `message` field from the standard ApiResponse envelope.
@@ -151,31 +141,14 @@ class AssessmentApiService {
     required int assessmentTypeId,
     required List<Map<String, dynamic>> answers,
   }) async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw NetworkException(
-        'Token tidak ditemukan. Silakan login kembali.',
-        NetworkErrorType.unauthorized,
-      );
-    }
-
     final payload = {'assessmentTypeId': assessmentTypeId, 'answers': answers};
 
     try {
-      final response = await http
-          .post(
-            Uri.parse(AppConstants.submitAssessment),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(payload),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 401) {
-        await _handleUnauthorized();
-      }
+      final response = await AuthorizedClient.post(
+        Uri.parse(AppConstants.submitAssessment),
+        body: jsonEncode(payload),
+        timeout: const Duration(seconds: 30),
+      );
 
       if (response.statusCode != 200) {
         _throwHttpError(response, 'Gagal menyimpan pemeriksaan.');
@@ -208,21 +181,10 @@ class AssessmentApiService {
   }
 
   static Future<List<Map<String, dynamic>>> fetchHistory() async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
-    }
-
-    final response = await http
-        .get(
-          Uri.parse(AppConstants.assessmentHistory),
-          headers: {'Authorization': 'Bearer $token'},
-        )
-        .timeout(const Duration(seconds: 15));
-
-    if (response.statusCode == 401) {
-      await _handleUnauthorized();
-    }
+    final response = await AuthorizedClient.get(
+      Uri.parse(AppConstants.assessmentHistory),
+      timeout: const Duration(seconds: 15),
+    );
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -235,23 +197,11 @@ class AssessmentApiService {
   }
 
   static Future<List<Map<String, dynamic>>> fetchHistorySessions() async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw NetworkException(
-        'Token tidak ditemukan. Silakan login kembali.',
-        NetworkErrorType.unauthorized,
-      );
-    }
-
     try {
-      final response = await http
-          .get(
-            Uri.parse(AppConstants.assessmentHistorySessions),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 401) await _handleUnauthorized();
+      final response = await AuthorizedClient.get(
+        Uri.parse(AppConstants.assessmentHistorySessions),
+        timeout: const Duration(seconds: 15),
+      );
 
       if (response.statusCode != 200) {
         _throwHttpError(response, 'Gagal memuat riwayat pemeriksaan.');
@@ -281,23 +231,11 @@ class AssessmentApiService {
   static Future<Map<String, dynamic>?> fetchHistorySessionDetail(
     String sessionKey,
   ) async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw NetworkException(
-        'Token tidak ditemukan. Silakan login kembali.',
-        NetworkErrorType.unauthorized,
-      );
-    }
-
     try {
-      final response = await http
-          .get(
-            Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 401) await _handleUnauthorized();
+      final response = await AuthorizedClient.get(
+        Uri.parse(AppConstants.assessmentHistorySessionDetail(sessionKey)),
+        timeout: const Duration(seconds: 15),
+      );
 
       if (response.statusCode != 200) {
         _throwHttpError(response, 'Gagal memuat detail pemeriksaan.');
@@ -324,21 +262,10 @@ class AssessmentApiService {
   }
 
   static Future<Map<String, dynamic>?> fetchHistoryDetail(int id) async {
-    final token = await StorageService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
-    }
-
-    final response = await http
-        .get(
-          Uri.parse(AppConstants.assessmentHistoryDetail(id)),
-          headers: {'Authorization': 'Bearer $token'},
-        )
-        .timeout(const Duration(seconds: 15));
-
-    if (response.statusCode == 401) {
-      await _handleUnauthorized();
-    }
+    final response = await AuthorizedClient.get(
+      Uri.parse(AppConstants.assessmentHistoryDetail(id)),
+      timeout: const Duration(seconds: 15),
+    );
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;

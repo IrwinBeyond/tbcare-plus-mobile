@@ -36,6 +36,7 @@ class AppConstants {
   // ── API Paths ────────────────────────────────────────────────────────
   static final String authRegister = '$baseUrl/api/v1/auth/register';
   static final String authLogin = '$baseUrl/api/v1/auth/login';
+  static final String authRefresh = '$baseUrl/api/v1/auth/refresh';
   static final String authChangePassword =
       '$baseUrl/api/v1/auth/change-password';
   static final String usersMe = '$baseUrl/api/v1/auth/me';
@@ -56,6 +57,9 @@ class AppConstants {
   // ── SharedPreferences Keys ───────────────────────────────────────────
   static const String keyAccessToken = 'access_token';
   static const String keyRefreshToken = 'refresh_token';
+  // Epoch milliseconds at which the access token expires. Used to refresh
+  // proactively before a request rather than waiting for a 401.
+  static const String keyTokenExpiresAt = 'token_expires_at';
   static const String keyUser = 'user_json';
   static const String keyGuestAssessment = 'guest_assessment_json';
 

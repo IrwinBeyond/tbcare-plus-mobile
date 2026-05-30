@@ -77,6 +77,7 @@ class _LoginPageState extends State<LoginPage> {
       await StorageService.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        expiresIn: result.expiresIn,
       );
       await StorageService.saveUser(result.user);
       if (!mounted) return;

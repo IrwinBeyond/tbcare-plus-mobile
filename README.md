@@ -4,7 +4,9 @@ TBCare+ is a tuberculosis early-detection expert system mobile app built with **
 
 ## Features
 
-- **Authentication** — Login, registration, guest mode with Supabase JWT
+- **Authentication** — Login, registration, guest mode with Supabase JWT. Sessions persist
+  across restarts and the access token is **silently refreshed** in the background; the user
+  is only returned to login if the refresh token itself is rejected.
 - **Quick Check & Full Assessment** — Two-tier TB screening with wizard-guided forms
 - **Expert System Scoring** — Cross-TB-type certainty factor calculation
 - **Assessment History** — Session-grouped history with detailed symptom insights
@@ -16,7 +18,7 @@ TBCare+ is a tuberculosis early-detection expert system mobile app built with **
 ## Tech Stack
 
 - **Framework**: Flutter (Dart 3.12+)
-- **Auth**: Supabase JWT
+- **Auth**: Supabase JWT with automatic (silent) token refresh
 - **HTTP**: `http`
 - **Local Storage**: `shared_preferences` (tokens, cached configs, guest assessment)
 - **Connectivity**: `connectivity_plus` (offline pre-flight gating)
@@ -69,8 +71,10 @@ lib/
 ├── core/
 │   ├── constants/    # API endpoints, base URL toggle, prefs keys
 │   ├── models/       # Data models, JSON serializers
-│   ├── services/     # Auth/assessment API, storage, connectivity,
-│   │                 #   guest assessment, session, asset caching
+│   ├── services/     # Auth/assessment API, storage, connectivity, guest
+│   │                 #   assessment, session, asset caching. Authenticated
+│   │                 #   calls go through authorized_client (auto-attaches the
+│   │                 #   Bearer token) + token_service (silent refresh-and-retry)
 │   ├── utils/        # NetworkException, image & URL helpers
 │   ├── theme/        # Colors, text styles, theme
 │   └── widgets/      # Shared widgets (HomeHeader, AppTopBar)

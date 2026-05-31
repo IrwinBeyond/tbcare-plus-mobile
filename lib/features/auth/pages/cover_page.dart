@@ -183,7 +183,7 @@ class _CoverPageState extends State<CoverPage> with TickerProviderStateMixin {
                 children: [
                   Positioned(
                     top: logoPos,
-                    left: (screenWidth - 210 * logoScale) / 2,
+                    left: (screenWidth - logoSize * logoScale) / 2,
                     child: Opacity(
                       opacity: logoOpacity,
                       child: Transform.scale(

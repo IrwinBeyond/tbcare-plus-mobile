@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AboutPage extends StatelessWidget {
@@ -426,15 +427,22 @@ class AboutPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Versi 1.0 • Dikembangkan untuk\ntujuan edukasi dan\nkesadaran kesehatan',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.mutedForeground,
-            height: 1.625,
-          ),
+        FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final version = snapshot.data?.version ?? '';
+            final versionLabel = version.isEmpty ? 'Versi' : 'Versi $version';
+            return Text(
+              '$versionLabel • Dikembangkan untuk\ntujuan edukasi dan\nkesadaran kesehatan',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.mutedForeground,
+                height: 1.625,
+              ),
+            );
+          },
         ),
       ],
     );
